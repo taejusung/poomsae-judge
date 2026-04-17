@@ -1,61 +1,61 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>품새 AI 심판 - 2인 대결 모드</title>
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;overflow-x:hidden;min-height:100vh;}
-  .wrap{display:flex;flex-direction:column;align-items:center;padding:20px;gap:15px;}
-  .title{font-family:'Black Han Sans',sans-serif;font-size:28px;background:linear-gradient(90deg,#818cf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-  
-  .camera-container{position:relative;width:100%;max-width:800px;border-radius:20px;overflow:hidden;border:2px solid #312e81;}
-  #video{width:100%;display:block;background:#000;}
-  #canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>품새 AI 심판 - 2인 대결 모드</title>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;overflow-x:hidden;min-height:100vh;}
+        .wrap{display:flex;flex-direction:column;align-items:center;padding:15px;gap:12px;}
+        .title{font-family:'Black Han Sans',sans-serif;font-size:24px;background:linear-gradient(90deg,#818cf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        
+        .camera-container{position:relative;width:100%;max-width:640px;aspect-ratio:4/3;border-radius:15px;overflow:hidden;border:2px solid #312e81;background:#000;}
+        #video{width:100%;height:100%;object-fit:cover;display:block;}
+        #canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
 
-  .score-board{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:800px;}
-  .panel{padding:20px;border-radius:15px;text-align:center;background:rgba(255,255,255,0.05);border-bottom:5px solid #333;}
-  .blue{border-color:#1d4ed8;} .red{border-color:#be123c;}
-  .panel-name{font-family:'Black Han Sans',sans-serif;font-size:18px;margin-bottom:10px;}
-  .avg-score{font-family:'Black Han Sans',sans-serif;font-size:48px;color:#fbbf24;}
-  
-  .controls{display:flex;gap:10px;width:100%;max-width:800px;}
-  .btn{flex:1;padding:15px;border-radius:12px;border:none;font-family:'Black Han Sans',sans-serif;font-size:18px;cursor:pointer;transition:0.2s;}
-  .btn-start{background:#059669;color:#fff;}
-  .btn-stop{background:#dc2626;color:#fff;}
-  .btn-reset{background:#4b5563;color:#fff;}
-</style>
+        .score-board{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:640px;}
+        .panel{padding:15px;border-radius:12px;text-align:center;background:rgba(255,255,255,0.05);border-bottom:4px solid #333;}
+        .blue{border-color:#1d4ed8;} .red{border-color:#be123c;}
+        .panel-name{font-family:'Black Han Sans',sans-serif;font-size:16px;margin-bottom:5px;}
+        .avg-score{font-family:'Black Han Sans',sans-serif;font-size:36px;color:#fbbf24;}
+        
+        .controls{display:flex;gap:10px;width:100%;max-width:640px;}
+        .btn{flex:1;padding:12px;border-radius:10px;border:none;font-family:'Black Han Sans',sans-serif;font-size:16px;cursor:pointer;transition:0.2s;}
+        .btn-start{background:#059669;color:#fff;}
+        .btn-stop{background:#dc2626;color:#fff;}
+        .btn-reset{background:#4b5563;color:#fff;}
+        #loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:100;font-size:14px;color:#818cf8;}
+    </style>
 </head>
 <body>
 
 <div class="wrap">
-  <div class="title">🥋 품새 AI 심판: 2인 대결</div>
+    <div class="title">🥋 품새 AI 심판: 2인 대결</div>
 
-  <div class="camera-container">
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
-  </div>
-
-  <div class="score-board">
-    <div class="panel blue">
-      <div class="panel-name" style="color:#60a5fa">청 코너 (LEFT)</div>
-      <div class="avg-score" id="score0">0.0</div>
-      <div style="font-size:12px;opacity:0.6;">구간 평균 점수</div>
+    <div class="camera-container">
+        <div id="loading-overlay">AI 시스템 로딩 중...</div>
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
     </div>
-    <div class="panel red">
-      <div class="panel-name" style="color:#fb7185">홍 코너 (RIGHT)</div>
-      <div class="avg-score" id="score1">0.0</div>
-      <div style="font-size:12px;opacity:0.6;">구간 평균 점수</div>
-    </div>
-  </div>
 
-  <div class="controls">
-    <button class="btn btn-start" id="startBtn" onclick="startRecording()">⚔️ 측정 시작</button>
-    <button class="btn btn-stop" id="stopBtn" onclick="stopRecording()" style="display:none;">🛑 측정 종료</button>
-    <button class="btn btn-reset" onclick="location.reload()">🔄 초기화</button>
-  </div>
+    <div class="score-board">
+        <div class="panel blue">
+            <div class="panel-name" style="color:#60a5fa">청 코너 (LEFT)</div>
+            <div class="avg-score" id="score0">0.0</div>
+        </div>
+        <div class="panel red">
+            <div class="panel-name" style="color:#fb7185">홍 코너 (RIGHT)</div>
+            <div class="avg-score" id="score1">0.0</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-start" id="startBtn" onclick="startRecording()">⚔️ 측정 시작</button>
+        <button class="btn btn-stop" id="stopBtn" onclick="stopRecording()" style="display:none;">🛑 측정 종료</button>
+        <button class="btn btn-reset" onclick="location.reload()">🔄 초기화</button>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
@@ -65,96 +65,122 @@ let video = document.getElementById("video");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 let isRecording = false;
-let cumulativeScores = [[], []]; // [청코너데이터, 홍코너데이터]
+let cumulativeScores = [[], []];
 
-// 초기 설정
-async function initAI() {
-  const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
-  poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`, delegate: "GPU" },
-    runningMode: "VIDEO", numPoses: 2 // 핵심: 2명 동시 인식
-  });
-  startCamera();
+// 1. 카메라부터 즉시 실행 (가장 중요)
+async function startCamera() {
+    try {
+        const constraints = { 
+            video: { 
+                facingMode: "user", // 마스터님이 아까 성공했던 셀카 모드로 복구
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            } 
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+            video.play();
+            initAI(); // 카메라가 나오기 시작하면 AI 로드
+        };
+    } catch (err) {
+        console.error("카메라 에러:", err);
+        alert("카메라를 켤 수 없습니다. 브라우저 설정을 확인해주세요.");
+    }
 }
 
-async function startCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-  video.srcObject = stream;
-  video.addEventListener("loadeddata", predictWebcam);
+// 2. AI 모델 로드
+async function initAI() {
+    try {
+        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
+        poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+            baseOptions: { 
+                modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+                delegate: "GPU" 
+            },
+            runningMode: "VIDEO",
+            numPoses: 2 
+        });
+        document.getElementById("loading-overlay").style.display = "none";
+        predictWebcam();
+    } catch (err) {
+        document.getElementById("loading-overlay").textContent = "AI 로드 실패: " + err.message;
+    }
 }
 
 function startRecording() {
-  isRecording = true;
-  cumulativeScores = [[], []];
-  document.getElementById("startBtn").style.display = "none";
-  document.getElementById("stopBtn").style.display = "block";
+    isRecording = true;
+    cumulativeScores = [[], []];
+    document.getElementById("startBtn").style.display = "none";
+    document.getElementById("stopBtn").style.display = "block";
 }
 
 function stopRecording() {
-  isRecording = false;
-  document.getElementById("startBtn").style.display = "block";
-  document.getElementById("stopBtn").style.display = "none";
-  alert("측정이 완료되었습니다! 최종 평균 점수를 확인하세요.");
+    isRecording = false;
+    document.getElementById("startBtn").style.display = "block";
+    document.getElementById("stopBtn").style.display = "none";
 }
 
 async function predictWebcam() {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  
-  if (poseLandmarker) {
-    let startTimeMs = performance.now();
-    const results = await poseLandmarker.detectForVideo(video, startTimeMs);
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (results.landmarks) {
-      // X좌표 기준으로 왼쪽 사람을 청(0), 오른쪽 사람을 홍(1)으로 배정
-      const sortedPoses = results.landmarks.sort((a, b) => a[0].x - b[0].x);
-      
-      sortedPoses.forEach((landmark, index) => {
-        if (index > 1) return; // 최대 2명만 처리
+    if (poseLandmarker && video.readyState >= 2) {
+        let startTimeMs = performance.now();
+        const results = await poseLandmarker.detectForVideo(video, startTimeMs);
         
-        // 뼈대 그리기
-        drawPose(landmark, index === 0 ? "#60a5fa" : "#fb7185");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // 채점 로직
-        const frameScore = calculateScore(landmark);
-        
-        if (isRecording) {
-          cumulativeScores[index].push(frameScore);
-          updateDisplay(index);
+        if (results.landmarks && results.landmarks.length > 0) {
+            // 셀카 모드이므로 화면상 왼쪽(실제 오른쪽) 순서 정렬
+            const sortedPoses = results.landmarks.sort((a, b) => a[0].x - b[0].x);
+            
+            sortedPoses.forEach((landmark, index) => {
+                if (index > 1) return;
+                
+                const color = index === 0 ? "#60a5fa" : "#fb7185";
+                drawPose(landmark, color);
+                
+                if (isRecording) {
+                    const frameScore = calculateScore(landmark);
+                    cumulativeScores[index].push(frameScore);
+                    updateDisplay(index);
+                }
+            });
         }
-      });
     }
-  }
-  window.requestAnimationFrame(predictWebcam);
+    window.requestAnimationFrame(predictWebcam);
 }
 
 function calculateScore(lm) {
-  // 실제 5단 심사 기준과 유사하게 무릎 각도(앞굽이)와 상체 기울기를 분석
-  const hip = lm[23], knee = lm[25], ankle = lm[27];
-  const angle = Math.abs((Math.atan2(ankle.y - knee.y, ankle.x - knee.x) - Math.atan2(hip.y - knee.y, hip.x - knee.x)) * 180 / Math.PI);
-  
-  // 앞굽이 적정 각도(120~150도)일 때 높은 점수
-  let base = (angle > 120 && angle < 150) ? 9.5 : 7.0;
-  return base + (Math.random() * 0.5); // 약간의 변동성 추가
+    const hip = lm[23], knee = lm[25], ankle = lm[27];
+    if(!hip || !knee || !ankle) return 7.0;
+    
+    const angle = Math.abs((Math.atan2(ankle.y - knee.y, ankle.x - knee.x) - Math.atan2(hip.y - knee.y, hip.x - knee.x)) * 180 / Math.PI);
+    let base = (angle > 115 && angle < 155) ? 9.2 : 7.5;
+    return base + (Math.random() * 0.3);
 }
 
 function updateDisplay(idx) {
-  const scores = cumulativeScores[idx];
-  if (scores.length === 0) return;
-  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-  document.getElementById(`score${idx}`).textContent = avg.toFixed(1);
+    const scores = cumulativeScores[idx];
+    if (scores.length === 0) return;
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    document.getElementById(`score${idx}`).textContent = avg.toFixed(1);
 }
 
 function drawPose(landmarks, color) {
-  ctx.fillStyle = color;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 4;
-  landmarks.forEach(pt => ctx.beginPath() || ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 3, 0, 2*Math.PI) || ctx.fill());
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    landmarks.forEach(pt => {
+        ctx.beginPath();
+        ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 3, 0, 2 * Math.PI);
+        ctx.fill();
+    });
 }
 
-initAI();
+// 실행 시작
+startCamera();
 </script>
 </body>
 </html>
