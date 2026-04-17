@@ -26,7 +26,7 @@
         .btn-start{background:#059669;color:#fff;}
         .btn-stop{background:#dc2626;color:#fff;}
         .btn-reset{background:#4b5563;color:#fff;}
-        #loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:100;font-size:14px;color:#818cf8;}
+        #loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.8);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:100;font-size:14px;color:#818cf8;gap:10px;}
     </style>
 </head>
 <body>
@@ -35,7 +35,10 @@
     <div class="title">🥋 품새 AI 심판: 2인 대결</div>
 
     <div class="camera-container">
-        <div id="loading-overlay">AI 시스템 로딩 중...</div>
+        <div id="loading-overlay">
+            <div style="font-size: 18px; font-weight: bold;">AI 시스템 준비 중...</div>
+            <div id="status-detail">카메라 권한을 확인하고 있습니다.</div>
+        </div>
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
     </div>
@@ -58,41 +61,45 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js"></script>
 <script>
 let poseLandmarker;
-let video = document.getElementById("video");
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const statusDetail = document.getElementById("status-detail");
 let isRecording = false;
 let cumulativeScores = [[], []];
 
-// 1. 카메라부터 즉시 실행 (가장 중요)
+// 1. 카메라 시작 (후면 카메라 environment 고정)
 async function startCamera() {
     try {
-        const constraints = { 
+        statusDetail.textContent = "후면 카메라를 연결하는 중...";
+        const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
-                facingMode: "user", // 마스터님이 아까 성공했던 셀카 모드로 복구
+                facingMode: "environment", // 후면 카메라로 고정
                 width: { ideal: 640 },
                 height: { ideal: 480 }
             } 
-        };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        });
         video.srcObject = stream;
         video.onloadedmetadata = () => {
             video.play();
-            initAI(); // 카메라가 나오기 시작하면 AI 로드
+            initAI(); 
         };
     } catch (err) {
-        console.error("카메라 에러:", err);
-        alert("카메라를 켤 수 없습니다. 브라우저 설정을 확인해주세요.");
+        statusDetail.textContent = "카메라 로드 실패: " + err.message;
+        console.error(err);
     }
 }
 
-// 2. AI 모델 로드
+// 2. AI 초기화 (WASM 경로 및 모델 최적화)
 async function initAI() {
     try {
-        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
+        statusDetail.textContent = "AI 분석 엔진을 로드하고 있습니다...";
+        const vision = await FilesetResolver.forVisionTasks(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+        );
         poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
             baseOptions: { 
                 modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
@@ -104,7 +111,8 @@ async function initAI() {
         document.getElementById("loading-overlay").style.display = "none";
         predictWebcam();
     } catch (err) {
-        document.getElementById("loading-overlay").textContent = "AI 로드 실패: " + err.message;
+        statusDetail.textContent = "AI 엔진 로드 실패. 다시 시도해주세요.";
+        console.error(err);
     }
 }
 
@@ -126,18 +134,16 @@ async function predictWebcam() {
     canvas.height = video.videoHeight;
     
     if (poseLandmarker && video.readyState >= 2) {
-        let startTimeMs = performance.now();
-        const results = await poseLandmarker.detectForVideo(video, startTimeMs);
+        const results = await poseLandmarker.detectForVideo(video, performance.now());
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         if (results.landmarks && results.landmarks.length > 0) {
-            // 셀카 모드이므로 화면상 왼쪽(실제 오른쪽) 순서 정렬
+            // X좌표 기준 왼쪽은 0번(청), 오른쪽은 1번(홍)
             const sortedPoses = results.landmarks.sort((a, b) => a[0].x - b[0].x);
             
             sortedPoses.forEach((landmark, index) => {
                 if (index > 1) return;
-                
                 const color = index === 0 ? "#60a5fa" : "#fb7185";
                 drawPose(landmark, color);
                 
@@ -155,10 +161,8 @@ async function predictWebcam() {
 function calculateScore(lm) {
     const hip = lm[23], knee = lm[25], ankle = lm[27];
     if(!hip || !knee || !ankle) return 7.0;
-    
     const angle = Math.abs((Math.atan2(ankle.y - knee.y, ankle.x - knee.x) - Math.atan2(hip.y - knee.y, hip.x - knee.x)) * 180 / Math.PI);
-    let base = (angle > 115 && angle < 155) ? 9.2 : 7.5;
-    return base + (Math.random() * 0.3);
+    return (angle > 115 && angle < 155) ? (9.0 + Math.random()) : (7.5 + Math.random());
 }
 
 function updateDisplay(idx) {
@@ -179,7 +183,6 @@ function drawPose(landmarks, color) {
     });
 }
 
-// 실행 시작
 startCamera();
 </script>
 </body>
