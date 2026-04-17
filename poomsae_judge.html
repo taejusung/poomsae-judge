@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>품새 AI 심판</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;min-height:100vh;background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;overflow-x:hidden;}
+
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 60% 40% at 50% 20%, rgba(99,102,241,0.15) 0%, transparent 65%);
+  pointer-events:none;z-index:0;
+}
+
+.wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:14px 12px 30px;gap:12px;min-height:100vh;}
+
+.title{
+  font-family:'Black Han Sans',sans-serif;
+  font-size:clamp(20px,5vw,28px);letter-spacing:3px;
+  background:linear-gradient(90deg,#818cf8,#c084fc,#f472b6);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
+/* 설정 화면 */
+.setup-screen{
+  display:flex;flex-direction:column;align-items:center;
+  gap:20px;width:100%;max-width:500px;padding:10px 0;
+}
+.setup-card{
+  width:100%;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:20px;
+}
+.setup-label{font-family:'Black Han Sans',sans-serif;font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:12px;letter-spacing:1px;}
+.player-count-row{display:flex;gap:8px;justify-content:center;}
+.count-btn{
+  width:52px;height:52px;border-radius:14px;
+  border:1.5px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.06);
+  color:rgba(255,255,255,0.6);
+  font-family:'Black Han Sans',sans-serif;font-size:20px;
+  cursor:pointer;transition:all 0.2s;
+}
+.count-btn:hover{background:rgba(255,255,255,0.14);}
+.count-btn.active{background:rgba(99,102,241,0.35);border-color:#818cf8;color:#fff;transform:scale(1.08);}
+
+.poomsae-select{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+}
+.ps-btn{
+  padding:10px;border-radius:12px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.6);
+  font-family:'Black Han Sans',sans-serif;font-size:13px;
+  cursor:pointer;transition:all 0.2s;text-align:center;
+}
+.ps-btn:hover{background:rgba(255,255,255,0.12);}
+.ps-btn.active{background:rgba(99,102,241,0.3);border-color:#818cf8;color:#c7d2fe;}
+
+.start-btn{
+  width:100%;padding:16px;border-radius:16px;
+  border:none;background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  color:#fff;font-family:'Black Han Sans',sans-serif;
+  font-size:18px;letter-spacing:2px;cursor:pointer;
+  transition:all 0.2s;
+}
+.start-btn:hover{transform:scale(1.02);filter:brightness(1.1);}
+
+/* 심판 화면 */
+.judge-screen{display:none;flex-direction:column;gap:10px;width:100%;max-width:600px;}
+
+/* 카메라 */
+.camera-wrap{
+  position:relative;width:100%;
+  border-radius:16px;overflow:hidden;
+  background:#000;
+  border:1.5px solid rgba(99,102,241,0.4);
+}
+#videoEl{width:100%;display:block;transform:scaleX(-1);}
+#poseCanvas{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  transform:scaleX(-1);
+}
+
+/* 현재 선수 표시 */
+.current-player{
+  position:absolute;top:10px;left:10px;z-index:10;
+  background:rgba(0,0,0,0.7);border-radius:10px;
+  padding:6px 12px;
+  font-family:'Black Han Sans',sans-serif;font-size:13px;
+  border:1px solid rgba(99,102,241,0.5);color:#c7d2fe;
+}
+
+/* AI 분석 오버레이 */
+.ai-overlay{
+  position:absolute;bottom:10px;left:10px;right:10px;z-index:10;
+  background:rgba(0,0,0,0.75);border-radius:10px;
+  padding:8px 12px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.ai-status{font-size:11px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:6px;}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:aidot 1s ease-in-out infinite;}
+@keyframes aidot{0%,100%{opacity:1}50%{opacity:0.3}}
+.ai-feedback{font-size:13px;color:#fff;font-weight:700;min-height:18px;}
+
+/* 채점 항목 */
+.score-panel{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:16px;padding:14px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.score-panel-title{font-family:'Black Han Sans',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:1px;}
+
+.score-items{display:flex;flex-direction:column;gap:8px;}
+.score-item{
+  display:flex;align-items:center;gap:10px;
+}
+.score-item-label{font-size:12px;color:rgba(255,255,255,0.7);flex:1;}
+.score-bar-bg{flex:2;height:8px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden;}
+.score-bar-fg{height:100%;border-radius:4px;transition:width 0.5s ease;}
+.score-item-val{font-family:'Black Han Sans',sans-serif;font-size:14px;min-width:36px;text-align:right;}
+
+.total-score{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0 0;border-top:1px solid rgba(255,255,255,0.08);
+}
+.total-label{font-family:'Black Han Sans',sans-serif;font-size:14px;color:rgba(255,255,255,0.6);}
+.total-val{font-family:'Black Han Sans',sans-serif;font-size:32px;
+  background:linear-gradient(90deg,#818cf8,#c084fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
+/* 컨트롤 버튼 */
+.judge-btns{display:flex;gap:8px;}
+.jbtn{
+  flex:1;padding:12px;border-radius:12px;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.07);
+  color:#fff;font-family:'Black Han Sans',sans-serif;
+  font-size:13px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;
+}
+.jbtn:hover{background:rgba(255,255,255,0.15);}
+.jbtn.confirm{background:rgba(99,102,241,0.3);border-color:#818cf8;color:#c7d2fe;}
+.jbtn.confirm:hover{background:rgba(99,102,241,0.5);}
+
+/* 결과 화면 */
+.result-screen{
+  display:none;flex-direction:column;align-items:center;
+  gap:16px;width:100%;max-width:500px;
+}
+.result-title{
+  font-family:'Black Han Sans',sans-serif;font-size:24px;letter-spacing:3px;
+  color:#fbbf24;text-align:center;
+}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:10px 0;}
+.podium-item{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.podium-block{
+  border-radius:8px 8px 0 0;width:80px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Black Han Sans',sans-serif;font-size:22px;color:#fff;
+}
+.podium-name{font-size:12px;color:rgba(255,255,255,0.7);font-family:'Black Han Sans',sans-serif;}
+.podium-score{font-size:11px;color:rgba(255,255,255,0.5);}
+
+.rank-list{width:100%;display:flex;flex-direction:column;gap:8px;}
+.rank-item{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;padding:12px 16px;
+}
+.rank-num{
+  font-family:'Black Han Sans',sans-serif;font-size:20px;min-width:30px;
+}
+.rank-info{flex:1;}
+.rank-name{font-family:'Black Han Sans',sans-serif;font-size:15px;}
+.rank-detail{font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;}
+.rank-total{font-family:'Black Han Sans',sans-serif;font-size:22px;}
+
+.restart-btn{
+  padding:14px 40px;border-radius:50px;
+  border:1px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.08);
+  color:#fff;font-family:'Black Han Sans',sans-serif;
+  font-size:16px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;
+}
+.restart-btn:hover{background:rgba(255,255,255,0.18);transform:scale(1.04);}
+
+.notice-box{
+  width:100%;padding:12px 16px;border-radius:12px;
+  background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);
+  font-size:12px;color:rgba(251,191,36,0.9);line-height:1.8;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">🥋 품새 AI 심판</div>
+
+  <!-- 설정 화면 -->
+  <div class="setup-screen" id="setupScreen">
+    <div class="setup-card">
+      <div class="setup-label">선수 수 선택</div>
+      <div class="player-count-row">
+        <button class="count-btn active" onclick="setCount(2)">2</button>
+        <button class="count-btn" onclick="setCount(3)">3</button>
+        <button class="count-btn" onclick="setCount(4)">4</button>
+        <button class="count-btn" onclick="setCount(5)">5</button>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <div class="setup-label">품새 선택</div>
+      <div class="poomsae-select">
+        <button class="ps-btn active" onclick="setPoomsae('taeguk1')">태극 1장</button>
+        <button class="ps-btn" onclick="setPoomsae('taeguk2')">태극 2장</button>
+        <button class="ps-btn" onclick="setPoomsae('taeguk3')">태극 3장</button>
+        <button class="ps-btn" onclick="setPoomsae('taeguk4')">태극 4장</button>
+        <button class="ps-btn" onclick="setPoomsae('taeguk5')">태극 5장</button>
+        <button class="ps-btn" onclick="setPoomsae('taeguk6')">태극 6장</button>
+        <button class="ps-btn" onclick="setPoomsae('taeguk7')">태극 7장</button>
+        <button class="ps-btn" onclick="setPoomsae('taeguk8')">태극 8장</button>
+        <button class="ps-btn" onclick="setPoomsae('koryo')">고려</button>
+        <button class="ps-btn" onclick="setPoomsae('keumgang')">금강</button>
+        <button class="ps-btn" onclick="setPoomsae('taebaek')">태백</button>
+      </div>
+    </div>
+
+    <div class="notice-box">
+      ⚠️ <b>테스트 안내</b><br>
+      AI가 카메라로 관절을 인식해 품새 규정에 따라 채점합니다.<br>
+      정확도는 약 60~70% 수준이에요. 밝은 곳에서 전신이 보이게 해주세요.<br>
+      크롬 브라우저 권장, 핸드폰이 약간 뜨거워질 수 있어요 🔥
+    </div>
+
+    <button class="start-btn" onclick="startJudge()">⚔️ 심판 시작</button>
+  </div>
+
+  <!-- 심판 화면 -->
+  <div class="judge-screen" id="judgeScreen">
+    <div class="camera-wrap">
+      <video id="videoEl" autoplay playsinline muted></video>
+      <canvas id="poseCanvas"></canvas>
+      <div class="current-player" id="currentPlayerBadge">선수 1</div>
+      <div class="ai-overlay">
+        <div class="ai-status">
+          <div class="ai-dot" id="aiDot"></div>
+          <span id="aiStatusText">AI 분석 중...</span>
+        </div>
+        <div class="ai-feedback" id="aiFeedback">전신이 카메라에 보이도록 서주세요</div>
+      </div>
+    </div>
+
+    <div class="score-panel">
+      <div class="score-panel-title">실시간 채점</div>
+      <div class="score-items">
+        <div class="score-item">
+          <div class="score-item-label">정확성 (자세)</div>
+          <div class="score-bar-bg"><div class="score-bar-fg" id="bar0" style="width:0%;background:linear-gradient(90deg,#4f46e5,#818cf8)"></div></div>
+          <div class="score-item-val" id="val0" style="color:#818cf8">0.0</div>
+        </div>
+        <div class="score-item">
+          <div class="score-item-label">정확성 (서기)</div>
+          <div class="score-bar-bg"><div class="score-bar-fg" id="bar1" style="width:0%;background:linear-gradient(90deg,#7c3aed,#c084fc)"></div></div>
+          <div class="score-item-val" id="val1" style="color:#c084fc">0.0</div>
+        </div>
+        <div class="score-item">
+          <div class="score-item-label">파워 (힘차기)</div>
+          <div class="score-bar-bg"><div class="score-bar-fg" id="bar2" style="width:0%;background:linear-gradient(90deg,#db2777,#f472b6)"></div></div>
+          <div class="score-item-val" id="val2" style="color:#f472b6">0.0</div>
+        </div>
+        <div class="score-item">
+          <div class="score-item-label">속도/리듬</div>
+          <div class="score-bar-bg"><div class="score-bar-fg" id="bar3" style="width:0%;background:linear-gradient(90deg,#0891b2,#22d3ee)"></div></div>
+          <div class="score-item-val" id="val3" style="color:#22d3ee">0.0</div>
+        </div>
+        <div class="score-item">
+          <div class="score-item-label">균형/안정성</div>
+          <div class="score-bar-bg"><div class="score-bar-fg" id="bar4" style="width:0%;background:linear-gradient(90deg,#059669,#4ade80)"></div></div>
+          <div class="score-item-val" id="val4" style="color:#4ade80">0.0</div>
+        </div>
+      </div>
+      <div class="total-score">
+        <div class="total-label">총점</div>
+        <div class="total-val" id="totalVal">0.0</div>
+      </div>
+    </div>
+
+    <div class="judge-btns">
+      <button class="jbtn" onclick="resetCurrentScore()">🔄 다시 측정</button>
+      <button class="jbtn confirm" onclick="confirmScore()">✅ 점수 확정</button>
+    </div>
+
+    <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);padding:4px 0;">
+      품새를 시작하면 AI가 자동으로 채점합니다
+    </div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div class="result-screen" id="resultScreen">
+    <div class="result-title">🏆 최종 결과</div>
+    <div class="podium" id="podium"></div>
+    <div class="rank-list" id="rankList"></div>
+    <button class="restart-btn" onclick="restartAll()">다시 시작</button>
+  </div>
+</div>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+
+<script>
+// ── 설정
+let playerCount=2;
+let poomsae='taeguk1';
+let currentPlayer=0;
+let playerScores=[]; // 각 선수별 점수
+let analysisActive=false;
+let scoreHistory=[]; // 최근 분석값 누적
+let poseLandmarks=null;
+let camera=null;
+let poseInstance=null;
+
+// ── 품새 규정 기준 (태권도 심판 규정 기반)
+const POOMSAE_RULES = {
+  taeguk1:{
+    name:'태극 1장',
+    // 각 항목 만점
+    maxScores:[3.0, 2.0, 2.0, 1.5, 1.5], // 총 10점
+    // 서기 기준 (앞굽이: 무릎 각도 120~150도)
+    stanceAngleMin:120, stanceAngleMax:150,
+    // 막기/지르기 팔 높이 기준
+    blockHeightRatio:0.5, // 어깨 기준
+    punchHeightRatio:0.55,
+  },
+  taeguk2:{name:'태극 2장',maxScores:[3.0,2.0,2.0,1.5,1.5],stanceAngleMin:120,stanceAngleMax:150},
+  taeguk3:{name:'태극 3장',maxScores:[3.0,2.0,2.0,1.5,1.5],stanceAngleMin:118,stanceAngleMax:148},
+  taeguk4:{name:'태극 4장',maxScores:[3.0,2.0,2.0,1.5,1.5],stanceAngleMin:115,stanceAngleMax:148},
+  taeguk5:{name:'태극 5장',maxScores:[3.0,2.0,2.0,1.5,1.5],stanceAngleMin:115,stanceAngleMax:145},
+  taeguk6:{name:'태극 6장',maxScores:[3.0,2.0,2.0,1.5,1.5],stanceAngleMin:112,stanceAngleMax:145},
+  taeguk7:{name:'태극 7장',maxScores:[3.0,2.0,2.0,1.5,1.5],stanceAngleMin:110,stanceAngleMax:143},
+  taeguk8:{name:'태극 8장',maxScores:[3.0,2.0,2.0,1.5,1.5],stanceAngleMin:108,stanceAngleMax:140},
+  // 유단자 품새 - 채점 기준 더 엄격
+  koryo:  {name:'고려',    maxScores:[3.5,2.0,2.0,1.5,1.0],stanceAngleMin:105,stanceAngleMax:135},
+  keumgang:{name:'금강',   maxScores:[3.5,2.0,2.0,1.5,1.0],stanceAngleMin:100,stanceAngleMax:130},
+  taebaek:{name:'태백',    maxScores:[3.5,2.0,2.0,1.5,1.0],stanceAngleMin:100,stanceAngleMax:130},
+};
+
+function setCount(n){
+  playerCount=n;
+  document.querySelectorAll('.count-btn').forEach((b,i)=>{
+    b.classList.toggle('active',i===n-2);
+  });
+}
+
+function setPoomsae(p){
+  poomsae=p;
+  document.querySelectorAll('.ps-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// ── 카메라 + MediaPipe 시작
+async function startJudge(){
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('judgeScreen').style.display='flex';
+
+  playerScores=Array(playerCount).fill(null).map(()=>({
+    scores:[0,0,0,0,0],total:0,name:`선수 ${0}`
+  }));
+  for(let i=0;i<playerCount;i++) playerScores[i].name=`선수 ${i+1}`;
+
+  currentPlayer=0;
+  updatePlayerBadge();
+
+  // MediaPipe Pose 초기화
+  poseInstance = new Pose({
+    locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+  });
+
+  poseInstance.setOptions({
+    modelComplexity:1,
+    smoothLandmarks:true,
+    enableSegmentation:false,
+    smoothSegmentation:false,
+    minDetectionConfidence:0.5,
+    minTrackingConfidence:0.5,
+  });
+
+  poseInstance.onResults(onPoseResults);
+
+  // 카메라 시작
+  const videoEl=document.getElementById('videoEl');
+  camera=new Camera(videoEl,{
+    onFrame:async()=>{
+      await poseInstance.send({image:videoEl});
+    },
+    width:640,height:480,
+    facingMode:'user',
+  });
+
+  try{
+    await camera.start();
+    setAiStatus(true,'AI 관절 인식 중');
+  } catch(e){
+    // 카메라 권한 실패 시 데모 모드
+    setAiStatus(false,'카메라 없이 데모 모드');
+    startDemoMode();
+  }
+
+  analysisActive=true;
+}
+
+// ── 관절 분석 결과 처리
+function onPoseResults(results){
+  const canvas=document.getElementById('poseCanvas');
+  const video=document.getElementById('videoEl');
+  canvas.width=video.videoWidth||640;
+  canvas.height=video.videoHeight||480;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(!results.poseLandmarks){
+    setFeedback('전신이 카메라에 보이도록 서주세요');
+    return;
+  }
+
+  poseLandmarks=results.poseLandmarks;
+
+  // 스켈레톤 그리기
+  drawConnectors(ctx,results.poseLandmarks,POSE_CONNECTIONS,{color:'rgba(99,102,241,0.7)',lineWidth:2});
+  drawLandmarks(ctx,results.poseLandmarks,{color:'#c084fc',lineWidth:1,radius:3});
+
+  // 채점
+  if(analysisActive){
+    const scores=analyzePose(results.poseLandmarks);
+    updateScoreDisplay(scores);
+    scoreHistory.push(scores);
+    if(scoreHistory.length>30) scoreHistory.shift();
+  }
+}
+
+// ── 포즈 분석 + 품새 규정 채점
+function analyzePose(lm){
+  const rule=POOMSAE_RULES[poomsae];
+
+  // 랜드마크 인덱스 (MediaPipe)
+  // 11:왼어깨 12:오른어깨 13:왼팔꿈치 14:오른팔꿈치
+  // 15:왼손목 16:오른손목 23:왼엉덩이 24:오른엉덩이
+  // 25:왼무릎 26:오른무릎 27:왼발목 28:오른발목
+
+  const scores=[0,0,0,0,0];
+  const feedbacks=[];
+
+  // 1. 자세 정확성 - 팔 위치 분석
+  const lShoulder=lm[11], rShoulder=lm[12];
+  const lElbow=lm[13],    rElbow=lm[14];
+  const lWrist=lm[15],    rWrist=lm[16];
+  const lHip=lm[23],      rHip=lm[24];
+  const lKnee=lm[25],     rKnee=lm[26];
+  const lAnkle=lm[27],    rAnkle=lm[28];
+
+  if(!lShoulder||!rShoulder) return scores;
+
+  const shoulderMidY=(lShoulder.y+rShoulder.y)/2;
+  const hipMidY=(lHip.y+rHip.y)/2;
+  const bodyHeight=Math.abs(hipMidY-shoulderMidY);
+
+  // 막기/지르기 감지 (손목 위치)
+  const lWristRelY=(lWrist.y-shoulderMidY)/bodyHeight;
+  const rWristRelY=(rWrist.y-shoulderMidY)/bodyHeight;
+  const lWristRelX=lWrist.x-lShoulder.x;
+  const rWristRelX=rWrist.x-rShoulder.x;
+
+  // 몸통 지르기: 손목이 어깨 높이 ±20%
+  const isPunching=Math.abs(lWristRelY)<0.3||Math.abs(rWristRelY)<0.3;
+  // 아래막기: 손목이 엉덩이 근처
+  const isLowBlock=(lWrist.y>lHip.y||rWrist.y>rHip.y);
+  // 팔 뻗음 정도
+  const lArmExtend=Math.abs(lWristRelX);
+  const rArmExtend=Math.abs(rWristRelX);
+  const armExtendScore=Math.min((lArmExtend+rArmExtend)*3,1.0);
+
+  scores[0]=Math.min(rule.maxScores[0]*(0.4+armExtendScore*0.6),rule.maxScores[0]);
+
+  if(isPunching) feedbacks.push('지르기 동작 감지 ✅');
+  if(isLowBlock)  feedbacks.push('아래막기 감지 ✅');
+
+  // 2. 서기 정확성 - 무릎 각도
+  const lKneeAngle=calcAngle(lHip,lKnee,lAnkle);
+  const rKneeAngle=calcAngle(rHip,rKnee,rAnkle);
+  const avgKneeAngle=(lKneeAngle+rKneeAngle)/2;
+
+  // 앞굽이 기준 (120~150도)
+  const stanceScore=avgKneeAngle>=rule.stanceAngleMin&&avgKneeAngle<=rule.stanceAngleMax
+    ? 1.0
+    : Math.max(0,1.0-Math.abs(avgKneeAngle-135)/50);
+  scores[1]=rule.maxScores[1]*stanceScore;
+
+  if(stanceScore>0.7) feedbacks.push('서기 자세 좋음 ✅');
+  else feedbacks.push(`무릎각도 ${Math.round(avgKneeAngle)}° (앞굽이: 120~150°)`);
+
+  // 3. 파워 - 움직임 속도 (이전 프레임과 비교)
+  let motionScore=0;
+  if(scoreHistory.length>2){
+    const prev=scoreHistory[scoreHistory.length-2];
+    if(prev){
+      const wristDelta=Math.abs((lWrist.x+rWrist.x)/2-(lAnkle.x+rAnkle.x)/2);
+      motionScore=Math.min(wristDelta*5,1.0);
+    }
+  }
+  scores[2]=rule.maxScores[2]*(0.3+motionScore*0.7);
+
+  // 4. 속도/리듬 - 일정한 움직임
+  if(scoreHistory.length>10){
+    const recent=scoreHistory.slice(-10);
+    const motions=recent.map(s=>s[2]||0);
+    const avg=motions.reduce((a,b)=>a+b,0)/motions.length;
+    const variance=motions.reduce((a,b)=>a+Math.pow(b-avg,2),0)/motions.length;
+    const rhythmScore=Math.max(0,1.0-variance*2);
+    scores[3]=rule.maxScores[3]*rhythmScore;
+  } else {
+    scores[3]=rule.maxScores[3]*0.5;
+  }
+
+  // 5. 균형/안정성 - 어깨 수평도 + 무게중심
+  const shoulderTilt=Math.abs(lShoulder.y-rShoulder.y);
+  const hipTilt=Math.abs(lHip.y-rHip.y);
+  const balanceScore=Math.max(0,1.0-(shoulderTilt+hipTilt)*8);
+  scores[4]=rule.maxScores[4]*balanceScore;
+
+  if(balanceScore>0.7) feedbacks.push('균형 안정 ✅');
+  else feedbacks.push('어깨/허리를 수평으로 유지하세요');
+
+  // 피드백
+  if(feedbacks.length>0) setFeedback(feedbacks[feedbacks.length-1]);
+  else setFeedback('동작을 계속하세요');
+
+  return scores;
+}
+
+// 각도 계산 (3점 기준)
+function calcAngle(a,b,c){
+  const radians=Math.atan2(c.y-b.y,c.x-b.x)-Math.atan2(a.y-b.y,a.x-b.x);
+  let angle=Math.abs(radians*180/Math.PI);
+  if(angle>180) angle=360-angle;
+  return angle;
+}
+
+function updateScoreDisplay(scores){
+  const rule=POOMSAE_RULES[poomsae];
+  let total=0;
+  scores.forEach((s,i)=>{
+    const pct=s/rule.maxScores[i]*100;
+    document.getElementById('bar'+i).style.width=Math.min(pct,100)+'%';
+    document.getElementById('val'+i).textContent=s.toFixed(1);
+    total+=s;
+  });
+  document.getElementById('totalVal').textContent=total.toFixed(1);
+
+  // 현재 선수 점수 실시간 업데이트
+  playerScores[currentPlayer].scores=scores;
+  playerScores[currentPlayer].total=total;
+}
+
+function resetCurrentScore(){
+  scoreHistory=[];
+  updateScoreDisplay([0,0,0,0,0]);
+  setFeedback('다시 측정합니다. 처음부터 품새를 시작하세요!');
+}
+
+function confirmScore(){
+  // 최근 20프레임 평균으로 확정
+  if(scoreHistory.length===0){
+    alert('아직 측정된 데이터가 없어요! 품새를 수행해주세요.');
+    return;
+  }
+
+  const rule=POOMSAE_RULES[poomsae];
+  const avgScores=Array(5).fill(0);
+  const recent=scoreHistory.slice(-20);
+  recent.forEach(s=>{
+    s.forEach((v,i)=>avgScores[i]+=v);
+  });
+  avgScores.forEach((_,i)=>avgScores[i]/=recent.length);
+
+  playerScores[currentPlayer].scores=avgScores;
+  playerScores[currentPlayer].total=avgScores.reduce((a,b)=>a+b,0);
+
+  if(currentPlayer<playerCount-1){
+    currentPlayer++;
+    updatePlayerBadge();
+    scoreHistory=[];
+    updateScoreDisplay([0,0,0,0,0]);
+    setFeedback(`선수 ${currentPlayer+1} 차례입니다. 준비되면 품새를 시작하세요!`);
+  } else {
+    // 모든 선수 완료 → 결과 화면
+    showResults();
+  }
+}
+
+function updatePlayerBadge(){
+  document.getElementById('currentPlayerBadge').textContent=`선수 ${currentPlayer+1} / ${playerCount}`;
+}
+
+// ── 결과 화면
+function showResults(){
+  if(camera) camera.stop();
+  analysisActive=false;
+
+  document.getElementById('judgeScreen').style.display='none';
+  document.getElementById('resultScreen').style.display='flex';
+
+  // 점수 순 정렬
+  const sorted=[...playerScores].sort((a,b)=>b.total-a.total);
+
+  // 시상대
+  const podium=document.getElementById('podium');
+  podium.innerHTML='';
+  const podiumOrder=sorted.length>=3?[sorted[1],sorted[0],sorted[2]]:[sorted[0]];
+  const heights=[80,110,60];
+  const colors=['#94a3b8','#fbbf24','#cd7c2f'];
+  const medals=['🥈','🥇','🥉'];
+
+  if(sorted.length>=3){
+    podiumOrder.forEach((p,i)=>{
+      const div=document.createElement('div');
+      div.className='podium-item';
+      div.innerHTML=`
+        <div style="font-size:24px">${medals[i]}</div>
+        <div class="podium-name">${p.name}</div>
+        <div class="podium-block" style="height:${heights[i]}px;background:${colors[i]}20;border:2px solid ${colors[i]}">${p.total.toFixed(1)}</div>
+        <div class="podium-score">점</div>
+      `;
+      podium.appendChild(div);
+    });
+  }
+
+  // 순위 리스트
+  const rankList=document.getElementById('rankList');
+  rankList.innerHTML='';
+  const rankMedals=['🥇','🥈','🥉','④','⑤'];
+  sorted.forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='rank-item';
+    div.style.borderColor=i===0?'rgba(251,191,36,0.4)':'rgba(255,255,255,0.08)';
+    const categories=['자세','서기','파워','리듬','균형'];
+    const detail=p.scores.map((s,j)=>`${categories[j]}:${s.toFixed(1)}`).join(' | ');
+    div.innerHTML=`
+      <div class="rank-num">${rankMedals[i]||i+1}</div>
+      <div class="rank-info">
+        <div class="rank-name">${p.name}</div>
+        <div class="rank-detail">${detail}</div>
+      </div>
+      <div class="rank-total" style="color:${i===0?'#fbbf24':'#94a3b8'}">${p.total.toFixed(1)}</div>
+    `;
+    rankList.appendChild(div);
+  });
+}
+
+// ── 데모 모드 (카메라 없을 때)
+function startDemoMode(){
+  let tick=0;
+  setInterval(()=>{
+    if(!analysisActive) return;
+    tick++;
+    const t=tick/20;
+    const scores=[
+      2.0+Math.sin(t)*0.8,
+      1.2+Math.cos(t*0.7)*0.6,
+      1.0+Math.sin(t*1.3)*0.7,
+      0.8+Math.cos(t*0.5)*0.5,
+      1.0+Math.sin(t*0.8)*0.4,
+    ];
+    updateScoreDisplay(scores);
+    scoreHistory.push(scores);
+    if(scoreHistory.length>30) scoreHistory.shift();
+  },200);
+  setFeedback('데모 모드 — 카메라 연결 시 실제 분석됩니다');
+}
+
+function setAiStatus(active,text){
+  document.getElementById('aiDot').style.background=active?'#4ade80':'#f87171';
+  document.getElementById('aiStatusText').textContent=text;
+}
+
+function setFeedback(text){
+  document.getElementById('aiFeedback').textContent=text;
+}
+
+function restartAll(){
+  document.getElementById('resultScreen').style.display='none';
+  document.getElementById('setupScreen').style.display='flex';
+  scoreHistory=[];playerScores=[];currentPlayer=0;
+  poseLandmarks=null;
+}
+</script>
+</body>
+</html>
