@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>AI 품새 심판 v5</title>
+<title>AI 품새 심판 v6</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -12,63 +12,51 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
 .title{font-family:'Black Han Sans',sans-serif;font-size:22px;letter-spacing:2px;
   background:linear-gradient(90deg,#818cf8,#c084fc);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-
 .camera-box{position:relative;width:100%;max-width:640px;
   background:#000;border-radius:16px;overflow:hidden;border:2px solid #312e81;}
 #video{width:100%;height:auto;display:block;}
 #canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
-
-#status-overlay{
-  position:absolute;inset:0;background:rgba(0,0,0,0.93);
+#status-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.93);
   display:flex;flex-direction:column;justify-content:center;align-items:center;
-  text-align:center;z-index:100;padding:20px;gap:14px;
-}
+  text-align:center;z-index:100;padding:20px;gap:14px;}
 .loader{width:40px;height:40px;border:3px solid rgba(99,102,241,0.2);
   border-top-color:#818cf8;border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .status-text{font-size:14px;color:#818cf8;line-height:1.9;}
 .status-sub{font-size:11px;color:rgba(255,255,255,0.3);}
-
 .detect-badges{position:absolute;top:10px;left:0;right:0;
   display:flex;justify-content:space-between;padding:0 10px;z-index:10;pointer-events:none;}
 .detect-badge{padding:5px 12px;border-radius:20px;font-family:'Black Han Sans',sans-serif;font-size:12px;transition:all 0.3s;}
 .detect-badge.blue{background:rgba(59,130,246,0.3);border:1.5px solid rgba(59,130,246,0.5);color:#93c5fd;}
-.detect-badge.red {background:rgba(239,68,68,0.3); border:1.5px solid rgba(239,68,68,0.5);color:#fca5a5;}
+.detect-badge.red{background:rgba(239,68,68,0.3);border:1.5px solid rgba(239,68,68,0.5);color:#fca5a5;}
 .detect-badge.found{background:rgba(74,222,128,0.3);border-color:#4ade80;color:#4ade80;}
-
-#lock-overlay{
-  position:absolute;inset:0;display:none;flex-direction:column;
+#lock-overlay{position:absolute;inset:0;display:none;flex-direction:column;
   justify-content:flex-end;align-items:center;padding-bottom:16px;z-index:20;
-  background:linear-gradient(transparent 50%,rgba(0,0,0,0.65) 100%);
-}
+  background:linear-gradient(transparent 50%,rgba(0,0,0,0.65) 100%);}
 .lock-btn{padding:14px 40px;border-radius:50px;background:rgba(251,191,36,0.95);
   border:none;color:#000;font-family:'Black Han Sans',sans-serif;font-size:16px;
   letter-spacing:2px;cursor:pointer;animation:pulse 1s ease-in-out infinite;}
 @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(251,191,36,0.5)}
   50%{transform:scale(1.04);box-shadow:0 0 0 8px rgba(251,191,36,0)}}
-
-.phase-bar{width:100%;max-width:640px;display:flex;gap:6px;align-items:center;justify-content:center;}
+.phase-bar{width:100%;max-width:640px;display:flex;gap:6px;}
 .phase-step{flex:1;padding:8px;border-radius:8px;text-align:center;
   font-family:'Black Han Sans',sans-serif;font-size:11px;letter-spacing:1px;
   background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
   color:rgba(255,255,255,0.3);transition:all 0.3s;}
 .phase-step.active{background:rgba(99,102,241,0.3);border-color:#818cf8;color:#c7d2fe;}
 .phase-step.done{background:rgba(74,222,128,0.15);border-color:#4ade80;color:#4ade80;}
-
 .score-board{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:640px;}
 .score-panel{border-radius:14px;padding:14px;text-align:center;display:flex;flex-direction:column;gap:5px;}
 .score-panel.blue{background:rgba(59,130,246,0.12);border:1.5px solid rgba(59,130,246,0.45);}
-.score-panel.red {background:rgba(239,68,68,0.12); border:1.5px solid rgba(239,68,68,0.45);}
+.score-panel.red{background:rgba(239,68,68,0.12);border:1.5px solid rgba(239,68,68,0.45);}
 .corner-label{font-size:11px;letter-spacing:1px;}
 .blue .corner-label{color:#60a5fa;}.red .corner-label{color:#fb7185;}
 .big-score{font-family:'Black Han Sans',sans-serif;font-size:44px;}
 .blue .big-score{color:#60a5fa;}.red .big-score{color:#fb7185;}
 .items-row{display:flex;flex-direction:column;gap:3px;margin-top:4px;}
 .item-row{display:flex;justify-content:space-between;font-size:10px;}
-.item-name{color:rgba(255,255,255,0.45);}
-.item-val{font-weight:700;}
+.item-name{color:rgba(255,255,255,0.45);}.item-val{font-weight:700;}
 .blue .item-val{color:#93c5fd;}.red .item-val{color:#fca5a5;}
-
 .btn-row{display:flex;gap:10px;width:100%;max-width:640px;}
 .btn{flex:1;padding:14px;border-radius:12px;border:none;
   font-family:'Black Han Sans',sans-serif;font-size:15px;letter-spacing:1px;
@@ -78,7 +66,6 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
 .btn-start.recording{background:linear-gradient(135deg,#be123c,#e11d48);}
 .btn-reset{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);
   border:1px solid rgba(255,255,255,0.15);opacity:1;pointer-events:all;}
-
 .result-bar{width:100%;max-width:640px;background:rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;
   text-align:center;font-family:'Black Han Sans',sans-serif;font-size:18px;
@@ -89,31 +76,28 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
 <body>
 <div class="wrap">
   <div class="title">🥋 AI 품새 심판</div>
-
   <div class="phase-bar">
     <div class="phase-step active" id="phase0">① 준비</div>
     <div class="phase-step" id="phase1">② 위치확인</div>
     <div class="phase-step" id="phase2">③ 고정</div>
     <div class="phase-step" id="phase3">④ 측정</div>
   </div>
-
-  <div class="camera-box" id="cameraBox">
+  <div class="camera-box">
     <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
     <div class="detect-badges">
       <div class="detect-badge blue" id="badgeLeft">🔵 청 대기</div>
-      <div class="detect-badge red"  id="badgeRight">🔴 홍 대기</div>
+      <div class="detect-badge red" id="badgeRight">🔴 홍 대기</div>
     </div>
     <div id="lock-overlay">
       <button class="lock-btn" onclick="lockPositions()">📌 이 위치로 고정!</button>
     </div>
     <div id="status-overlay">
-      <div class="loader" id="loader"></div>
+      <div class="loader"></div>
       <div class="status-text" id="statusText">AI 엔진 로딩 중...<br>2인 동시 인식 모델 준비 중</div>
       <div class="status-sub" id="statusSub">첫 실행 시 30~60초 소요될 수 있어요</div>
     </div>
   </div>
-
   <div class="score-board">
     <div class="score-panel blue">
       <div class="corner-label">🔵 청 코너 (왼쪽)</div>
@@ -136,123 +120,143 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
       </div>
     </div>
   </div>
-
   <div class="btn-row">
     <button class="btn btn-start" id="recordBtn" onclick="toggleRecord()">⚔️ 측정 시작</button>
     <button class="btn btn-reset" onclick="resetAll()">🔄 처음부터</button>
   </div>
-
   <div class="result-bar" id="resultBar">① 두 선수가 화면 좌우에 서주세요</div>
-  <div class="debug" id="debugMsg">시스템 초기화 중...</div>
+  <div class="debug" id="debugMsg">초기화 중...</div>
 </div>
 
 <script>
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+const video=document.getElementById('video');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
 
-let phase = 'loading';
-let isRecording = false;
-let poseLandmarker = null;
-let lastVideoTime = -1;
+let phase='loading';
+let isRecording=false;
+let poseLandmarker=null;
+let lastVideoTime=-1;
+let useTasksVision=false;
 
-// 2인 인식 결과 — 인덱스 0=청(왼쪽), 1=홍(오른쪽)
-let personLM = [null, null];
-let prevLM   = [null, null];
-let lastScore = [
-  {post:2.0, stance:1.5, balance:1.5, power:0.5},
-  {post:2.0, stance:1.5, balance:1.5, power:0.5}
+let personLM=[null,null];
+let prevLM=[null,null];
+let lastScore=[
+  {post:2.0,stance:1.5,balance:1.5,power:0.5},
+  {post:2.0,stance:1.5,balance:1.5,power:0.5}
 ];
-let scoreAccum = [
-  {post:[], stance:[], balance:[], power:[]},
-  {post:[], stance:[], balance:[], power:[]}
+let scoreAccum=[
+  {post:[],stance:[],balance:[],power:[]},
+  {post:[],stance:[],balance:[],power:[]}
 ];
-let framesSinceMotion = [0, 0];
-let detectedLeft = false, detectedRight = false;
+let framesSinceMotion=[0,0];
+let detectedLeft=false,detectedRight=false;
 
-// ── Tasks Vision (2인 동시 인식)
+// ── 스크립트 로드 (타임아웃 포함)
+function loadScript(src, timeout=20000){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');
+    const t=setTimeout(()=>rej(new Error('timeout')), timeout);
+    s.onload=()=>{clearTimeout(t);res();};
+    s.onerror=()=>{clearTimeout(t);rej(new Error('load error'));};
+    s.src=src;
+    document.head.appendChild(s);
+  });
+}
+
+// window.tasksVision이 실제로 준비될 때까지 대기
+function waitForTasksVision(timeout=10000){
+  return new Promise((res,rej)=>{
+    if(window.tasksVision){res(window.tasksVision);return;}
+    const start=Date.now();
+    const check=setInterval(()=>{
+      if(window.tasksVision){clearInterval(check);res(window.tasksVision);}
+      else if(Date.now()-start>timeout){clearInterval(check);rej(new Error('tasksVision not found'));}
+    },200);
+  });
+}
+
+// ── 메인 초기화
 async function init(){
-  setStatus('2인 인식 AI 로딩 중...','Tasks Vision 모델 다운로드 중 (30~60초)');
-
-  // Tasks Vision CDN 시도
-  const cdns = [
-    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js',
-    'https://unpkg.com/@mediapipe/tasks-vision@0.10.3/vision_bundle.js',
-  ];
-
-  let loaded = false;
-  for(const cdn of cdns){
-    try{
-      await loadScript(cdn);
-      if(window.tasksVision){ loaded=true; break; }
-    }catch(e){ continue; }
-  }
-
-  if(!loaded){
-    // Tasks Vision 실패 → 구버전 Pose로 폴백
-    setStatus('구버전 모델로 전환 중...','단일 인식 모드');
-    await initLegacyPose();
-    return;
-  }
+  setStatus('Tasks Vision 로딩 중...','2인 동시 인식 모델 (30~60초)');
 
   try{
-    setStatus('모델 초기화 중...','관절 인식 준비');
-    const vision = window.tasksVision;
+    // 1단계: 스크립트 로드
+    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js', 30000);
+    setStatus('라이브러리 연결 확인 중...','');
+
+    // 2단계: window.tasksVision 실제로 준비될 때까지 대기
+    const vision = await waitForTasksVision(8000);
+    setStatus('WASM 모델 초기화 중...','GPU 가속 설정 중');
+
+    // 3단계: FilesetResolver
     const filesetResolver = await vision.FilesetResolver.forVisionTasks(
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
     );
 
-    poseLandmarker = await vision.PoseLandmarker.createFromOptions(filesetResolver, {
+    setStatus('포즈 인식 모델 로딩 중...','2인 동시 인식 준비');
+
+    // 4단계: PoseLandmarker (numPoses:2)
+    poseLandmarker = await vision.PoseLandmarker.createFromOptions(filesetResolver,{
       baseOptions:{
         modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
         delegate:'GPU'
       },
       runningMode:'VIDEO',
-      numPoses:2  // ← 2인 동시 인식!
+      numPoses:2
     });
 
+    useTasksVision=true;
     setStatus('카메라 연결 중...','후방 카메라 활성화');
-    await setupCamera('tasks');
+    document.getElementById('debugMsg').textContent='✅ Tasks Vision 2인 인식 모드';
+    await setupCamera();
+    startTasksLoop();
+
   }catch(e){
-    setStatus('구버전 모델로 전환 중...','단일 인식 모드');
-    await initLegacyPose();
+    // Tasks Vision 실패 → 구버전 Pose
+    document.getElementById('debugMsg').textContent='⚠️ Tasks Vision 실패: '+e.message+' → 구버전 전환';
+    setStatus('구버전 Pose 로딩 중...','단일 인식 모드로 전환');
+    await initLegacy();
   }
 }
 
-// 구버전 Pose 폴백
-async function initLegacyPose(){
+async function initLegacy(){
   try{
-    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js')
-      .catch(()=>loadScript('https://unpkg.com/@mediapipe/pose/pose.js'));
+    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js',20000)
+      .catch(()=>loadScript('https://unpkg.com/@mediapipe/pose/pose.js',20000));
 
-    const pose = new Pose({
+    // Pose 클래스 준비 대기
+    await new Promise((res,rej)=>{
+      const start=Date.now();
+      const check=setInterval(()=>{
+        if(window.Pose){clearInterval(check);res();}
+        else if(Date.now()-start>8000){clearInterval(check);rej();}
+      },200);
+    });
+
+    const pose=new Pose({
       locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`
     });
     pose.setOptions({modelComplexity:1,smoothLandmarks:true,
       minDetectionConfidence:0.5,minTrackingConfidence:0.5});
     pose.onResults(onLegacyResults);
-    poseLandmarker = {legacy:true, instance:pose};
-    await setupCamera('legacy');
+    poseLandmarker={legacy:true,instance:pose};
+    useTasksVision=false;
+    setStatus('카메라 연결 중...','단일 인식 모드');
+    document.getElementById('debugMsg').textContent='⚡ 구버전 단일 인식 모드';
+    await setupCamera();
+    startLegacyLoop();
   }catch(e){
     setStatus('⚠️ 데모 모드','AI 없이 실행');
-    await setupCamera('demo');
+    await setupCamera();
     startDemoMode();
   }
 }
 
-function loadScript(src){
-  return new Promise((res,rej)=>{
-    // 이미 로드된 경우 스킵
-    if(document.querySelector(`script[src="${src}"]`)){res();return;}
-    const s=document.createElement('script');
-    s.src=src;s.onload=res;s.onerror=rej;
-    document.head.appendChild(s);
-  });
-}
-
-async function setupCamera(mode){
+async function setupCamera(){
   try{
-    const stream = await navigator.mediaDevices.getUserMedia({
+    const stream=await navigator.mediaDevices.getUserMedia({
       video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:480}}
     });
     video.srcObject=stream;
@@ -262,58 +266,55 @@ async function setupCamera(mode){
     canvas.height=video.videoHeight||480;
     document.getElementById('status-overlay').style.display='none';
     setPhase('detecting');
-    document.getElementById('debugMsg').textContent=
-      mode==='tasks'?'🚀 2인 동시 인식 AI 가동 중':
-      mode==='legacy'?'⚡ 단일 인식 모드 (좌우 분리)':'🎮 데모 모드';
-
-    if(mode==='tasks') startTasksLoop();
-    else if(mode==='legacy') startLegacyLoop();
+    setResult('① 두 선수가 화면 좌우에 서주세요');
   }catch(err){
     setStatus('❌ 카메라 권한 없음','설정에서 카메라를 허용해주세요');
   }
 }
 
-// ── Tasks Vision 루프 (2인)
+// ── Tasks Vision 루프
 function startTasksLoop(){
-  const loop = ()=>{
-    if(video.readyState>=2 && video.currentTime !== lastVideoTime){
+  const loop=()=>{
+    if(video.readyState>=2&&video.currentTime!==lastVideoTime){
       canvas.width=video.videoWidth;
       canvas.height=video.videoHeight;
       lastVideoTime=video.currentTime;
-      const results = poseLandmarker.detectForVideo(video, performance.now());
-      processTasksResults(results);
+      try{
+        const results=poseLandmarker.detectForVideo(video,performance.now());
+        processResults(results.landmarks||[]);
+      }catch(e){}
     }
     requestAnimationFrame(loop);
   };
   loop();
 }
 
-function processTasksResults(results){
+function processResults(landmarks){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   personLM=[null,null];
 
-  if(!results.landmarks||results.landmarks.length===0){
+  if(!landmarks||landmarks.length===0){
     updateBadges(false,false);
+    document.getElementById('debugMsg').textContent='인식 대기 중... 전신이 보이도록 서주세요';
     return;
   }
 
-  // 2인 인식: x좌표 기준으로 왼쪽/오른쪽 분류
-  const sorted = [...results.landmarks].sort((a,b)=>{
-    const ax=(a[11].x+a[12].x)/2;
-    const bx=(b[11].x+b[12].x)/2;
+  // x좌표 기준 정렬 → 왼쪽=청(0), 오른쪽=홍(1)
+  const sorted=[...landmarks].sort((a,b)=>{
+    const ax=(a[11]?.x||0+a[12]?.x||0)/2;
+    const bx=(b[11]?.x||0+b[12]?.x||0)/2;
     return ax-bx;
   });
 
-  if(sorted[0]) personLM[0]=sorted[0]; // 왼쪽=청
-  if(sorted[1]) personLM[1]=sorted[1]; // 오른쪽=홍
-
-  detectedLeft  = !!personLM[0];
-  detectedRight = !!personLM[1];
+  personLM[0]=sorted[0]||null;
+  personLM[1]=sorted[1]||null;
+  detectedLeft=!!personLM[0];
+  detectedRight=!!personLM[1];
 
   if(personLM[0]) drawSkeleton(personLM[0],'#3b82f6');
   if(personLM[1]) drawSkeleton(personLM[1],'#ef4444');
 
-  updateBadges(detectedLeft, detectedRight);
+  updateBadges(detectedLeft,detectedRight);
 
   if(phase==='detecting'&&detectedLeft&&detectedRight){
     document.getElementById('lock-overlay').style.display='flex';
@@ -321,18 +322,18 @@ function processTasksResults(results){
   }
 
   if(isRecording){
-    if(personLM[0]) scoreOnePerson(personLM[0], 0);
-    if(personLM[1]) scoreOnePerson(personLM[1], 1);
+    if(personLM[0]) scoreOnePerson(personLM[0],0);
+    if(personLM[1]) scoreOnePerson(personLM[1],1);
     updateScoreUI();
   }
 
   document.getElementById('debugMsg').textContent=
-    `2인 인식: 청${detectedLeft?'✅':'❌'} 홍${detectedRight?'✅':'❌'} | 감지인원: ${results.landmarks.length}명`;
+    `감지: ${landmarks.length}명 | 청${detectedLeft?'✅':'❌'} 홍${detectedRight?'✅':'❌'} | ${useTasksVision?'2인모드':'단일모드'}`;
 }
 
-// ── 구버전 Legacy 루프
+// ── Legacy 루프
 async function startLegacyLoop(){
-  const loop = async()=>{
+  const loop=async()=>{
     if(video.readyState>=2){
       canvas.width=video.videoWidth;
       canvas.height=video.videoHeight;
@@ -346,35 +347,27 @@ async function startLegacyLoop(){
 function onLegacyResults(results){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   personLM=[null,null];
-
-  if(!results.poseLandmarks){
-    updateBadges(false,false);return;
-  }
-
+  if(!results.poseLandmarks){updateBadges(false,false);return;}
   const lm=results.poseLandmarks;
   const midX=(lm[11].x+lm[12].x)/2;
-
-  if(midX<0.5){ personLM[0]=lm; detectedLeft=true; }
-  else         { personLM[1]=lm; detectedRight=true; }
-
+  if(midX<0.5){personLM[0]=lm;detectedLeft=true;}
+  else{personLM[1]=lm;detectedRight=true;}
   if(personLM[0]) drawSkeleton(personLM[0],'#3b82f6');
   if(personLM[1]) drawSkeleton(personLM[1],'#ef4444');
-
-  updateBadges(detectedLeft, detectedRight);
-
+  updateBadges(detectedLeft,detectedRight);
   if(phase==='detecting'&&detectedLeft&&detectedRight){
     document.getElementById('lock-overlay').style.display='flex';
     setResult('✅ 두 선수 인식 완료! 위치가 맞으면 고정 버튼을 누르세요');
   }
-
   if(isRecording){
     if(personLM[0]) scoreOnePerson(personLM[0],0);
     if(personLM[1]) scoreOnePerson(personLM[1],1);
     updateScoreUI();
   }
+  document.getElementById('debugMsg').textContent=
+    `단일모드 | 청${detectedLeft?'✅':'❌'} 홍${detectedRight?'✅':'❌'} | midX:${midX.toFixed(2)}`;
 }
 
-// ── 위치 고정
 function lockPositions(){
   document.getElementById('lock-overlay').style.display='none';
   setPhase('locked');
@@ -383,46 +376,41 @@ function lockPositions(){
 }
 
 // ── 채점
-function scoreOnePerson(lm, idx){
+function scoreOnePerson(lm,idx){
   if(!lm||lm.length<33)return;
   const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14];
   const lw=lm[15],rw=lm[16],lh=lm[23],rh=lm[24];
   const lk=lm[25],rk=lm[26],la=lm[27],ra=lm[28];
   if(!ls||!rs||!lh||!rh)return;
 
-  // 1. 자세 정확성 (3.5점)
   const lArm=dist(ls,lw),rArm=dist(rs,rw);
   const sym=1-Math.min(Math.abs(lArm-rArm),0.3)/0.3;
   const wDiff=Math.abs(lw.y-rw.y);
   const post=Math.min((sym*0.5+(lArm+rArm)*2*0.3+Math.max(0,1-wDiff*4)*0.2)*3.5,3.5);
 
-  // 2. 서기 (2.0점)
   const lKA=angle3(lh,lk,la),rKA=angle3(rh,rk,ra),avgK=(lKA+rKA)/2;
   const stance=avgK>=120&&avgK<=150?2.0:avgK>=90?1.8:Math.max(0,2.0-Math.abs(avgK-135)/40);
 
-  // 3. 균형 (2.0점)
   const bal=Math.max(0,2.0-(Math.abs(ls.y-rs.y)*6+Math.abs(lh.y-rh.y)*4));
 
-  // 4. 파워 (2.5점) — 움직임 있을 때만 갱신
   let power=lastScore[idx].power;
   if(prevLM[idx]){
     const motion=dist(lw,prevLM[idx][15])+dist(rw,prevLM[idx][16])
-                +dist(lk,prevLM[idx][25])*0.5+dist(rk,prevLM[idx][26])*0.5;
+      +dist(lk,prevLM[idx][25])*0.5+dist(rk,prevLM[idx][26])*0.5;
     if(motion>0.012){
       power=Math.min(motion*12,2.5);
       lastScore[idx].power=power;
       framesSinceMotion[idx]=0;
-    } else {
+    }else{
       framesSinceMotion[idx]++;
     }
   }
   prevLM[idx]=lm;
 
-  // 스무딩 (급락 방지)
   const sm=0.12;
-  lastScore[idx].post   =lastScore[idx].post   *(1-sm)+post   *sm;
-  lastScore[idx].stance =lastScore[idx].stance *(1-sm)+stance *sm;
-  lastScore[idx].balance=lastScore[idx].balance*(1-sm)+bal    *sm;
+  lastScore[idx].post=lastScore[idx].post*(1-sm)+post*sm;
+  lastScore[idx].stance=lastScore[idx].stance*(1-sm)+stance*sm;
+  lastScore[idx].balance=lastScore[idx].balance*(1-sm)+bal*sm;
 
   scoreAccum[idx].post.push(lastScore[idx].post);
   scoreAccum[idx].stance.push(lastScore[idx].stance);
@@ -462,15 +450,13 @@ function drawSkeleton(lm,color){
   const W=canvas.width,H=canvas.height;
   ctx.strokeStyle=color;ctx.lineWidth=3;ctx.fillStyle=color;
   BONES.forEach(([a,b])=>{
-    if(!lm[a]||!lm[b]) return;
-    const va=lm[a].visibility??1, vb=lm[b].visibility??1;
+    if(!lm[a]||!lm[b])return;
+    const va=lm[a].visibility??1,vb=lm[b].visibility??1;
     if(va<0.3||vb<0.3)return;
-    ctx.beginPath();ctx.moveTo(lm[a].x*W,lm[a].y*H);
-    ctx.lineTo(lm[b].x*W,lm[b].y*H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(lm[a].x*W,lm[a].y*H);ctx.lineTo(lm[b].x*W,lm[b].y*H);ctx.stroke();
   });
   lm.forEach((pt,i)=>{
-    const v=pt.visibility??1;
-    if(v<0.3)return;
+    if((pt.visibility??1)<0.3)return;
     ctx.beginPath();ctx.arc(pt.x*W,pt.y*H,i===0?8:4,0,Math.PI*2);ctx.fill();
   });
 }
@@ -493,7 +479,7 @@ function startDemoMode(){
     if(isRecording){
       [0,1].forEach(idx=>{
         const m=Math.abs(Math.sin(t*1.5+idx))*0.06;
-        if(m>0.01) lastScore[idx].power=Math.min(m*12,2.5);
+        if(m>0.01)lastScore[idx].power=Math.min(m*12,2.5);
         lastScore[idx].post=2.0+Math.sin(t+idx)*0.4;
         lastScore[idx].stance=1.5+Math.cos(t*0.7+idx)*0.3;
         lastScore[idx].balance=1.5+Math.sin(t*0.5+idx)*0.2;
@@ -515,10 +501,8 @@ function drawDummy(cx,cy,color,t){
   const la=Math.sin(t)*0.4,ra=Math.sin(t+Math.PI)*0.4;
   const p={
     ls:[cx-s*.5,cy-s*1.5],rs:[cx+s*.5,cy-s*1.5],
-    le:[cx-s*(.9+la),cy-s*(.8-Math.abs(la)*.3)],
-    re:[cx+s*(.9+ra),cy-s*(.8-Math.abs(ra)*.3)],
-    lw:[cx-s*(1.2+la*1.5),cy-s*(.3-la*.5)],
-    rw:[cx+s*(1.2+ra*1.5),cy-s*(.3-ra*.5)],
+    le:[cx-s*(.9+la),cy-s*(.8-Math.abs(la)*.3)],re:[cx+s*(.9+ra),cy-s*(.8-Math.abs(ra)*.3)],
+    lw:[cx-s*(1.2+la*1.5),cy-s*(.3-la*.5)],rw:[cx+s*(1.2+ra*1.5),cy-s*(.3-ra*.5)],
     lh:[cx-s*.3,cy],rh:[cx+s*.3,cy],
     lk:[cx-s*.4,cy+s*1.2],rk:[cx+s*.4,cy+s*1.2],
     la:[cx-s*.4,cy+s*2.2],ra:[cx+s*.4,cy+s*2.2],
@@ -529,7 +513,6 @@ function drawDummy(cx,cy,color,t){
   ctx.beginPath();ctx.arc(cx,cy-s*2.2,s*.4,0,Math.PI*2);ctx.fill();
 }
 
-// ── 수학
 function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
 function angle3(a,b,c){
   const ab={x:a.x-b.x,y:a.y-b.y},cb={x:c.x-b.x,y:c.y-b.y};
@@ -539,7 +522,6 @@ function angle3(a,b,c){
 }
 function avg(arr){return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;}
 
-// ── 컨트롤
 function updateBadges(left,right){
   const bl=document.getElementById('badgeLeft');
   const br=document.getElementById('badgeRight');
@@ -569,7 +551,7 @@ function toggleRecord(){
     scoreAccum=[{post:[],stance:[],balance:[],power:[]},{post:[],stance:[],balance:[],power:[]}];
     lastScore=[{post:2.0,stance:1.5,balance:1.5,power:0.5},{post:2.0,stance:1.5,balance:1.5,power:0.5}];
     setResult('⚔️ 측정 중...');
-  } else {
+  }else{
     const s0=parseFloat(document.getElementById('score0').textContent)||0;
     const s1=parseFloat(document.getElementById('score1').textContent)||0;
     if(s0>s1) setResult(`🏆 최종 결과 — 🔵 청 코너 승! (${s0} vs ${s1})`);
