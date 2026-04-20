@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>AI 품새 심판 v3</title>
+<title>AI 품새 심판 v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -13,14 +13,12 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
   background:linear-gradient(90deg,#818cf8,#c084fc);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
-.camera-box{
-  position:relative;width:100%;max-width:640px;
-  background:#000;border-radius:16px;overflow:hidden;
-  border:2px solid #312e81;
-}
+.camera-box{position:relative;width:100%;max-width:640px;
+  background:#000;border-radius:16px;overflow:hidden;border:2px solid #312e81;}
 #video{width:100%;height:auto;display:block;}
 #canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
 
+/* 단계 오버레이 */
 #status-overlay{
   position:absolute;inset:0;background:rgba(0,0,0,0.92);
   display:flex;flex-direction:column;justify-content:center;align-items:center;
@@ -32,6 +30,41 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
 .status-text{font-size:14px;color:#818cf8;line-height:1.9;}
 .status-sub{font-size:11px;color:rgba(255,255,255,0.3);}
 
+/* 인식 상태 배지 */
+.detect-badges{
+  position:absolute;top:10px;left:0;right:0;
+  display:flex;justify-content:space-between;padding:0 10px;
+  z-index:10;pointer-events:none;
+}
+.detect-badge{
+  padding:5px 12px;border-radius:20px;
+  font-family:'Black Han Sans',sans-serif;font-size:12px;
+  transition:all 0.3s;
+}
+.detect-badge.blue{background:rgba(59,130,246,0.3);border:1.5px solid rgba(59,130,246,0.5);color:#93c5fd;}
+.detect-badge.red {background:rgba(239,68,68,0.3); border:1.5px solid rgba(239,68,68,0.5); color:#fca5a5;}
+.detect-badge.found{background:rgba(74,222,128,0.3);border-color:#4ade80;color:#4ade80;}
+.detect-badge.locked{background:rgba(251,191,36,0.3);border-color:#fbbf24;color:#fbbf24;}
+
+/* 고정 버튼 오버레이 */
+#lock-overlay{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;
+  justify-content:flex-end;align-items:center;
+  padding-bottom:16px;z-index:20;
+  background:linear-gradient(transparent 50%, rgba(0,0,0,0.6) 100%);
+}
+.lock-btn{
+  padding:14px 40px;border-radius:50px;
+  background:rgba(251,191,36,0.9);
+  border:none;color:#000;
+  font-family:'Black Han Sans',sans-serif;font-size:16px;letter-spacing:2px;
+  cursor:pointer;animation:pulse 1s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(251,191,36,0.5)}
+  50%{transform:scale(1.04);box-shadow:0 0 0 8px rgba(251,191,36,0)}}
+
+/* 점수판 */
 .score-board{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:640px;}
 .score-panel{border-radius:14px;padding:14px;text-align:center;display:flex;flex-direction:column;gap:5px;}
 .score-panel.blue{background:rgba(59,130,246,0.12);border:1.5px solid rgba(59,130,246,0.45);}
@@ -46,12 +79,29 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
 .item-val{font-weight:700;}
 .blue .item-val{color:#93c5fd;}.red .item-val{color:#fca5a5;}
 
+/* 단계 표시 */
+.phase-bar{
+  width:100%;max-width:640px;
+  display:flex;gap:6px;align-items:center;justify-content:center;
+}
+.phase-step{
+  flex:1;padding:8px;border-radius:8px;text-align:center;
+  font-family:'Black Han Sans',sans-serif;font-size:11px;letter-spacing:1px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+  color:rgba(255,255,255,0.3);transition:all 0.3s;
+}
+.phase-step.active{background:rgba(99,102,241,0.3);border-color:#818cf8;color:#c7d2fe;}
+.phase-step.done{background:rgba(74,222,128,0.15);border-color:#4ade80;color:#4ade80;}
+
 .btn-row{display:flex;gap:10px;width:100%;max-width:640px;}
 .btn{flex:1;padding:14px;border-radius:12px;border:none;
-  font-family:'Black Han Sans',sans-serif;font-size:15px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;}
+  font-family:'Black Han Sans',sans-serif;font-size:15px;letter-spacing:1px;
+  cursor:pointer;transition:all 0.2s;opacity:0.4;pointer-events:none;}
+.btn.active{opacity:1;pointer-events:all;}
 .btn-start{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;}
 .btn-start.recording{background:linear-gradient(135deg,#be123c,#e11d48);}
-.btn-reset{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);}
+.btn-reset{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);
+  border:1px solid rgba(255,255,255,0.15);opacity:1;pointer-events:all;}
 
 .result-bar{
   width:100%;max-width:640px;
@@ -66,12 +116,33 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
 <div class="wrap">
   <div class="title">🥋 AI 품새 심판</div>
 
+  <!-- 단계 표시 -->
+  <div class="phase-bar">
+    <div class="phase-step active" id="phase0">① 준비</div>
+    <div class="phase-step" id="phase1">② 위치확인</div>
+    <div class="phase-step" id="phase2">③ 고정</div>
+    <div class="phase-step" id="phase3">④ 측정</div>
+  </div>
+
   <div class="camera-box" id="cameraBox">
     <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
+
+    <!-- 인식 배지 -->
+    <div class="detect-badges">
+      <div class="detect-badge blue" id="badgeLeft">🔵 청 대기</div>
+      <div class="detect-badge red"  id="badgeRight">🔴 홍 대기</div>
+    </div>
+
+    <!-- 고정 버튼 오버레이 -->
+    <div id="lock-overlay">
+      <button class="lock-btn" onclick="lockPositions()">📌 이 위치로 고정!</button>
+    </div>
+
+    <!-- 로딩 오버레이 -->
     <div id="status-overlay">
       <div class="loader"></div>
-      <div class="status-text" id="statusText">AI 엔진 로딩 중...<br>첫 실행 시 20~30초 소요됩니다</div>
+      <div class="status-text" id="statusText">AI 엔진 로딩 중...<br>잠시만 기다려주세요</div>
       <div class="status-sub" id="statusSub">MediaPipe 모델 다운로드 중</div>
     </div>
   </div>
@@ -79,32 +150,32 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
   <div class="score-board">
     <div class="score-panel blue">
       <div class="corner-label">🔵 청 코너 (왼쪽)</div>
-      <div class="big-score" id="score0">0.0</div>
+      <div class="big-score" id="score0">-</div>
       <div class="items-row">
-        <div class="item-row"><span class="item-name">자세 정확성</span><span class="item-val blue" id="i0_0">-</span></div>
-        <div class="item-row"><span class="item-name">서기 자세</span><span class="item-val blue" id="i0_1">-</span></div>
-        <div class="item-row"><span class="item-name">균형 안정성</span><span class="item-val blue" id="i0_2">-</span></div>
-        <div class="item-row"><span class="item-name">파워/동작</span><span class="item-val blue" id="i0_3">-</span></div>
+        <div class="item-row"><span class="item-name">자세</span><span class="item-val" id="i0_0">-</span></div>
+        <div class="item-row"><span class="item-name">서기</span><span class="item-val" id="i0_1">-</span></div>
+        <div class="item-row"><span class="item-name">균형</span><span class="item-val" id="i0_2">-</span></div>
+        <div class="item-row"><span class="item-name">파워</span><span class="item-val" id="i0_3">-</span></div>
       </div>
     </div>
     <div class="score-panel red">
       <div class="corner-label">🔴 홍 코너 (오른쪽)</div>
-      <div class="big-score" id="score1">0.0</div>
+      <div class="big-score" id="score1">-</div>
       <div class="items-row">
-        <div class="item-row"><span class="item-name">자세 정확성</span><span class="item-val red" id="i1_0">-</span></div>
-        <div class="item-row"><span class="item-name">서기 자세</span><span class="item-val red" id="i1_1">-</span></div>
-        <div class="item-row"><span class="item-name">균형 안정성</span><span class="item-val red" id="i1_2">-</span></div>
-        <div class="item-row"><span class="item-name">파워/동작</span><span class="item-val red" id="i1_3">-</span></div>
+        <div class="item-row"><span class="item-name">자세</span><span class="item-val" id="i1_0">-</span></div>
+        <div class="item-row"><span class="item-name">서기</span><span class="item-val" id="i1_1">-</span></div>
+        <div class="item-row"><span class="item-name">균형</span><span class="item-val" id="i1_2">-</span></div>
+        <div class="item-row"><span class="item-name">파워</span><span class="item-val" id="i1_3">-</span></div>
       </div>
     </div>
   </div>
 
   <div class="btn-row">
     <button class="btn btn-start" id="recordBtn" onclick="toggleRecord()">⚔️ 측정 시작</button>
-    <button class="btn btn-reset" onclick="resetAll()">🔄 초기화</button>
+    <button class="btn btn-reset" onclick="resetAll()">🔄 처음부터</button>
   </div>
 
-  <div class="result-bar" id="resultBar">측정을 시작하세요</div>
+  <div class="result-bar" id="resultBar">① 두 선수가 화면 좌우에 서주세요</div>
   <div class="debug" id="debugMsg">시스템 초기화 중...</div>
 </div>
 
@@ -113,50 +184,49 @@ const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+// 단계: 'loading' → 'detecting' → 'ready' → 'locked' → 'recording'
+let phase = 'loading';
+let poseInstance = null;
 let isRecording = false;
+
+// 인식 상태
+let detectedLeft = false;
+let detectedRight = false;
+let lockedBoundary = 0.5; // 좌우 구분선 (0~1)
+
+// 점수 누적
 let scoreAccum = [
   {post:[],stance:[],balance:[],power:[]},
   {post:[],stance:[],balance:[],power:[]}
 ];
+// 마지막 확정 점수 (가만히 있을 때 유지)
+let lastScore = [{post:0,stance:0,balance:0,power:0},{post:0,stance:0,balance:0,power:0}];
 let prevLM = [null, null];
-let poseInstance = null;
-let lastResults = null;
+let framesSinceMotion = [0, 0]; // 움직임 없는 프레임 수
 
-// ── MediaPipe 로드
+// ── 초기화
 async function init(){
-  setStatus('라이브러리 로딩 중...', 'CDN 연결 시도');
-
+  setStatus('AI 엔진 로딩 중...','MediaPipe 모델 다운로드 중 (20~30초)');
   await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js')
     .catch(()=>loadScript('https://unpkg.com/@mediapipe/camera_utils/camera_utils.js'));
-
   await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js')
     .catch(()=>loadScript('https://unpkg.com/@mediapipe/drawing_utils/drawing_utils.js'));
-
   await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js')
     .catch(()=>loadScript('https://unpkg.com/@mediapipe/pose/pose.js'));
 
-  setStatus('AI 모델 초기화 중...', '관절 인식 모델 준비 (20~30초)');
-
   try{
     poseInstance = new Pose({
-      locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`
+      locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`
     });
-
     poseInstance.setOptions({
-      modelComplexity: 1,
-      smoothLandmarks: true,
-      enableSegmentation: false,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
+      modelComplexity:1,smoothLandmarks:true,
+      minDetectionConfidence:0.5,minTrackingConfidence:0.5
     });
-
     poseInstance.onResults(onResults);
-
-    setStatus('카메라 연결 중...', '후방 카메라 활성화');
+    setStatus('카메라 연결 중...','후방 카메라 활성화');
     await setupCamera();
-
   }catch(e){
-    setStatus('⚠️ 모델 로드 실패\n데모 모드로 실행', e.message);
+    setStatus('⚠️ 데모 모드','AI 없이 실행 중');
     await setupCamera();
     startDemoMode();
   }
@@ -165,9 +235,7 @@ async function init(){
 function loadScript(src){
   return new Promise((res,rej)=>{
     const s=document.createElement('script');
-    s.src=src;
-    s.onload=res;
-    s.onerror=rej;
+    s.src=src;s.onload=res;s.onerror=rej;
     document.head.appendChild(s);
   });
 }
@@ -175,223 +243,235 @@ function loadScript(src){
 async function setupCamera(){
   try{
     const stream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:'environment'},
-        width:{ideal:640}, height:{ideal:480}
-      }
+      video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:480}}
     });
-    video.srcObject = stream;
-    await new Promise(res=>{ video.onloadedmetadata=res; });
+    video.srcObject=stream;
+    await new Promise(res=>{video.onloadedmetadata=res;});
     video.play();
-
-    // 캔버스 크기 video에 맞춤
-    const resizeCanvas = () => {
-      const box = document.getElementById('cameraBox');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
+    canvas.width = video.videoWidth||640;
+    canvas.height = video.videoHeight||480;
     document.getElementById('status-overlay').style.display='none';
-    document.getElementById('debugMsg').textContent = poseInstance ? '🚀 AI 가동 중 — 2인 인식 준비' : '데모 모드';
-
+    setPhase('detecting');
     if(poseInstance) startPoseLoop();
-
   }catch(err){
-    setStatus('❌ 카메라 권한 없음', '브라우저 설정에서 카메라를 허용해주세요');
+    setStatus('❌ 카메라 권한 없음','브라우저 설정에서 카메라를 허용해주세요');
   }
 }
 
 // ── Pose 루프
 async function startPoseLoop(){
-  const loop = async () => {
-    if(video.readyState >= 2){
-      // 캔버스를 항상 video 실제 크기로 맞춤
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      await poseInstance.send({image: video});
+  const loop = async()=>{
+    if(video.readyState>=2){
+      canvas.width=video.videoWidth;
+      canvas.height=video.videoHeight;
+      await poseInstance.send({image:video});
     }
     requestAnimationFrame(loop);
   };
   loop();
 }
 
-// ── 결과 처리
-function onResults(results){
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// 현재 프레임의 좌/우 랜드마크
+let currentLeft = null, currentRight = null;
 
-  if(!results.poseLandmarks || results.poseLandmarks.length === 0){
-    document.getElementById('debugMsg').textContent = '인식 대기 중... 전신이 보이도록 서주세요';
+function onResults(results){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(!results.poseLandmarks){
+    currentLeft=null;currentRight=null;
+    updateDetectBadges(false,false);
     return;
   }
 
   const lm = results.poseLandmarks;
-  document.getElementById('debugMsg').textContent = `✅ 인식됨 — 관절 ${lm.length}개`;
+  const midX = (lm[11].x+lm[12].x)/2;
 
-  // 화면 중앙 기준으로 좌우 분리
-  // 코(0) 또는 어깨 중심 x 기준
-  const shoulderMidX = (lm[11].x + lm[12].x) / 2;
+  // 고정 전: 경계선 기준으로 좌우 판별
+  // 고정 후: 고정된 경계선 사용
+  const boundary = (phase==='locked'||phase==='recording') ? lockedBoundary : 0.5;
 
-  // 단일 포즈 → 좌우 중 어느 쪽인지 판별
-  const isLeft = shoulderMidX < 0.5;
-  const pIdx = isLeft ? 0 : 1;
-  const color = isLeft ? '#3b82f6' : '#ef4444';
-
-  // 스켈레톤 그리기
-  drawSkeleton(lm, color);
-
-  // 채점
-  if(isRecording){
-    scoreOnePerson(lm, pIdx);
-    updateUI();
+  if(midX < boundary){
+    currentLeft = lm;
+    currentRight = null;
+    detectedLeft = true;
+  } else {
+    currentRight = lm;
+    currentLeft = null;
+    detectedRight = true;
   }
+
+  // 스켈레톤
+  if(currentLeft)  drawSkeleton(currentLeft,  '#3b82f6');
+  if(currentRight) drawSkeleton(currentRight, '#ef4444');
+
+  // 단계별 처리
+  if(phase==='detecting'){
+    updateDetectBadges(detectedLeft, detectedRight);
+    if(detectedLeft&&detectedRight){
+      document.getElementById('lock-overlay').style.display='flex';
+      setResult('✅ 두 선수 인식 완료! 위치가 맞으면 고정 버튼을 눌러주세요');
+    }
+  }
+
+  if(phase==='recording'){
+    if(currentLeft)  scoreOnePerson(currentLeft,  0);
+    if(currentRight) scoreOnePerson(currentRight, 1);
+    updateScoreUI();
+  }
+
+  document.getElementById('debugMsg').textContent =
+    `인식: 왼쪽${currentLeft?'✅':'❌'} 오른쪽${currentRight?'✅':'❌'} | 경계:${boundary.toFixed(2)}`;
 }
 
-// ── 스켈레톤 그리기 (정확한 좌표 변환)
-const BONES = [
-  [11,12],[11,13],[13,15],[12,14],[14,16],
-  [11,23],[12,24],[23,24],
-  [23,25],[24,26],[25,27],[26,28],
-  [15,17],[15,19],[15,21],[16,18],[16,20],[16,22],
-  [27,29],[28,30],[29,31],[30,32]
-];
-
-function drawSkeleton(lm, color){
-  const W = canvas.width;
-  const H = canvas.height;
-
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
-  ctx.fillStyle = color;
-
-  // 뼈대
-  BONES.forEach(([a,b])=>{
-    if(!lm[a]||!lm[b]) return;
-    if(lm[a].visibility < 0.3 || lm[b].visibility < 0.3) return;
-    ctx.beginPath();
-    ctx.moveTo(lm[a].x * W, lm[a].y * H);
-    ctx.lineTo(lm[b].x * W, lm[b].y * H);
-    ctx.stroke();
-  });
-
-  // 관절점
-  lm.forEach((pt, i) => {
-    if(pt.visibility < 0.3) return;
-    const r = (i===0) ? 8 : 5; // 머리 크게
-    ctx.beginPath();
-    ctx.arc(pt.x * W, pt.y * H, r, 0, Math.PI*2);
-    ctx.fill();
-  });
+// ── 위치 고정
+function lockPositions(){
+  // 현재 인식된 사람 위치로 경계선 결정
+  lockedBoundary = 0.5; // 기본값 유지 (좌우 반반)
+  document.getElementById('lock-overlay').style.display='none';
+  setPhase('locked');
+  setResult('📌 위치 고정 완료! 측정 시작 버튼을 누르세요');
+  document.getElementById('recordBtn').classList.add('active');
 }
 
-// ── 채점 로직 (품새 규정 기반)
+// ── 채점
 function scoreOnePerson(lm, idx){
-  const ls=lm[11], rs=lm[12];
-  const le=lm[13], re=lm[14];
-  const lw=lm[15], rw=lm[16];
-  const lh=lm[23], rh=lm[24];
-  const lk=lm[25], rk=lm[26];
-  const la=lm[27], ra=lm[28];
-
+  if(!lm||lm.length<33) return;
+  const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14];
+  const lw=lm[15],rw=lm[16],lh=lm[23],rh=lm[24];
+  const lk=lm[25],rk=lm[26],la=lm[27],ra=lm[28];
   if(!ls||!rs||!lh||!rh) return;
 
-  // 1. 자세 정확성 (만점 3.5)
-  // 팔 뻗음 정도 + 손목 높이 + 대칭성
-  const lArmExt = dist(ls,lw);
-  const rArmExt = dist(rs,rw);
-  const armAvg = (lArmExt + rArmExt) / 2;
-  const armSym = 1 - Math.min(Math.abs(lArmExt-rArmExt), 0.3) / 0.3;
-  const wristHeightDiff = Math.abs(lw.y - rw.y);
-  const postScore = Math.min(
-    (armAvg * 4 * 0.5 + armSym * 0.3 + Math.max(0, 1-wristHeightDiff*5) * 0.2) * 3.5,
-    3.5
-  );
+  // 1. 자세 (3.5점)
+  const lArmExt=dist(ls,lw), rArmExt=dist(rs,rw);
+  const armSym=1-Math.min(Math.abs(lArmExt-rArmExt),0.3)/0.3;
+  const wristDiff=Math.abs(lw.y-rw.y);
+  const postScore=Math.min((armSym*0.5+(lArmExt+rArmExt)*2*0.3+Math.max(0,1-wristDiff*4)*0.2)*3.5,3.5);
 
-  // 2. 서기 자세 (만점 2.0) - 무릎 각도
-  const lKA = angle3(lh, lk, la);
-  const rKA = angle3(rh, rk, ra);
-  const avgKA = (lKA + rKA) / 2;
-  // 앞굽이: 120~150도, 주춤서기: 90~120도
-  let stanceScore = 0;
-  if(avgKA >= 120 && avgKA <= 150) stanceScore = 2.0; // 앞굽이 완벽
-  else if(avgKA >= 90 && avgKA <= 120) stanceScore = 1.8; // 주춤서기
-  else stanceScore = Math.max(0, 2.0 - Math.abs(avgKA-135)/40);
+  // 2. 서기 (2.0점)
+  const lKA=angle3(lh,lk,la), rKA=angle3(rh,rk,ra);
+  const avgKA=(lKA+rKA)/2;
+  let stanceScore=avgKA>=120&&avgKA<=150?2.0:avgKA>=90&&avgKA<120?1.8:Math.max(0,2.0-Math.abs(avgKA-135)/40);
 
-  // 3. 균형 안정성 (만점 2.0)
-  const shoulderTilt = Math.abs(ls.y - rs.y);
-  const hipTilt = Math.abs(lh.y - rh.y);
-  const spineLean = Math.abs((ls.x+rs.x)/2 - (lh.x+rh.x)/2);
-  const balScore = Math.max(0, 2.0 - (shoulderTilt*6 + hipTilt*4 + spineLean*3));
+  // 3. 균형 (2.0점)
+  const sTilt=Math.abs(ls.y-rs.y), hTilt=Math.abs(lh.y-rh.y);
+  const balScore=Math.max(0,2.0-(sTilt*6+hTilt*4));
 
-  // 4. 파워/동작 (만점 2.5) - 손목 이동속도
-  let powerScore = 0.5;
+  // 4. 파워 (2.5점) - 움직임 있을 때만 업데이트
+  let powerScore = lastScore[idx].power; // 기본값: 이전 점수 유지
   if(prevLM[idx]){
-    const plw=prevLM[idx][15], prw=prevLM[idx][16];
-    const plk=prevLM[idx][25], prk=prevLM[idx][26];
-    const armMotion = dist(lw,plw) + dist(rw,prw);
-    const legMotion = dist(lk,plk) + dist(rk,prk);
-    powerScore = Math.min((armMotion*10 + legMotion*6) * 2.5, 2.5);
-  }
-  prevLM[idx] = lm;
+    const plw=prevLM[idx][15],prw=prevLM[idx][16];
+    const plk=prevLM[idx][25],prk=prevLM[idx][26];
+    const motion=dist(lw,plw)+dist(rw,prw)+dist(lk,plk)*0.5+dist(rk,prk)*0.5;
 
-  // 누적
-  scoreAccum[idx].post.push(postScore);
-  scoreAccum[idx].stance.push(stanceScore);
-  scoreAccum[idx].balance.push(balScore);
+    if(motion > 0.01){ // 움직임 감지 임계값
+      powerScore=Math.min(motion*12,2.5);
+      framesSinceMotion[idx]=0;
+      lastScore[idx].power=powerScore;
+    } else {
+      framesSinceMotion[idx]++;
+      // 2초(60프레임) 이상 가만히 있으면 서서히 유지 (하락 없음)
+      powerScore=lastScore[idx].power;
+    }
+  }
+  prevLM[idx]=lm;
+
+  // 가만히 있을 때 자세/서기/균형도 급락 방지
+  // 이전 점수와 현재 점수의 가중 평균 (스무딩)
+  const smooth=0.15;
+  const smoothPost   = lastScore[idx].post   * (1-smooth) + postScore   * smooth;
+  const smoothStance = lastScore[idx].stance * (1-smooth) + stanceScore * smooth;
+  const smoothBal    = lastScore[idx].balance* (1-smooth) + balScore    * smooth;
+
+  lastScore[idx]={
+    post:smoothPost,
+    stance:smoothStance,
+    balance:smoothBal,
+    power:powerScore
+  };
+
+  scoreAccum[idx].post.push(smoothPost);
+  scoreAccum[idx].stance.push(smoothStance);
+  scoreAccum[idx].balance.push(smoothBal);
   scoreAccum[idx].power.push(powerScore);
 
-  // 최근 90프레임만 유지
   ['post','stance','balance','power'].forEach(k=>{
-    if(scoreAccum[idx][k].length > 90) scoreAccum[idx][k].shift();
+    if(scoreAccum[idx][k].length>90) scoreAccum[idx][k].shift();
   });
 }
 
-function updateUI(){
+function updateScoreUI(){
   [0,1].forEach(idx=>{
-    const a = scoreAccum[idx];
-    if(a.post.length === 0) return;
-    const p  = avg(a.post).toFixed(1);
-    const s  = avg(a.stance).toFixed(1);
-    const b  = avg(a.balance).toFixed(1);
-    const pw = avg(a.power).toFixed(1);
-    const total = (parseFloat(p)+parseFloat(s)+parseFloat(b)+parseFloat(pw)).toFixed(1);
-
-    document.getElementById(`score${idx}`).textContent = total;
-    document.getElementById(`i${idx}_0`).textContent = p;
-    document.getElementById(`i${idx}_1`).textContent = s;
-    document.getElementById(`i${idx}_2`).textContent = b;
-    document.getElementById(`i${idx}_3`).textContent = pw;
+    const a=scoreAccum[idx];
+    if(!a.post.length) return;
+    const p =avg(a.post).toFixed(1);
+    const s =avg(a.stance).toFixed(1);
+    const b =avg(a.balance).toFixed(1);
+    const pw=avg(a.power).toFixed(1);
+    const total=(+p+ +s+ +b+ +pw).toFixed(1);
+    document.getElementById(`score${idx}`).textContent=total;
+    document.getElementById(`i${idx}_0`).textContent=p;
+    document.getElementById(`i${idx}_1`).textContent=s;
+    document.getElementById(`i${idx}_2`).textContent=b;
+    document.getElementById(`i${idx}_3`).textContent=pw;
   });
 
-  const s0 = parseFloat(document.getElementById('score0').textContent);
-  const s1 = parseFloat(document.getElementById('score1').textContent);
-  const rb = document.getElementById('resultBar');
-  if(s0 > 0 || s1 > 0){
-    if(s0 > s1) rb.innerHTML = `🔵 청 코너 우세! (${s0} vs ${s1})`;
-    else if(s1 > s0) rb.innerHTML = `🔴 홍 코너 우세! (${s1} vs ${s0})`;
-    else rb.innerHTML = `⚔️ 동점! (${s0})`;
+  const s0=parseFloat(document.getElementById('score0').textContent)||0;
+  const s1=parseFloat(document.getElementById('score1').textContent)||0;
+  if(s0>0||s1>0){
+    if(s0>s1) setResult(`🔵 청 코너 우세! (${s0} vs ${s1})`);
+    else if(s1>s0) setResult(`🔴 홍 코너 우세! (${s1} vs ${s0})`);
+    else setResult(`⚔️ 동점! (${s0})`);
   }
+}
+
+// ── 스켈레톤
+const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],
+  [23,25],[24,26],[25,27],[26,28],[27,29],[28,30],[29,31],[30,32]];
+function drawSkeleton(lm,color){
+  const W=canvas.width,H=canvas.height;
+  ctx.strokeStyle=color;ctx.lineWidth=3;ctx.fillStyle=color;
+  BONES.forEach(([a,b])=>{
+    if(!lm[a]||!lm[b]||lm[a].visibility<0.3||lm[b].visibility<0.3) return;
+    ctx.beginPath();ctx.moveTo(lm[a].x*W,lm[a].y*H);ctx.lineTo(lm[b].x*W,lm[b].y*H);ctx.stroke();
+  });
+  lm.forEach((pt,i)=>{
+    if(pt.visibility<0.3) return;
+    ctx.beginPath();ctx.arc(pt.x*W,pt.y*H,i===0?8:4,0,Math.PI*2);ctx.fill();
+  });
 }
 
 // ── 데모 모드
 function startDemoMode(){
-  let t = 0;
-  const loop = () => {
-    t += 0.04;
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+  let t=0;
+  detectedLeft=true;detectedRight=true;
+  document.getElementById('lock-overlay').style.display='flex';
+  setPhase('detecting');
+  updateDetectBadges(true,true);
+  setResult('✅ 데모 모드 — 위치 고정 버튼을 눌러주세요');
+  const loop=()=>{
+    t+=0.05;
+    canvas.width=video.videoWidth||640;
+    canvas.height=video.videoHeight||480;
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    drawDummy(canvas.width*0.25, canvas.height*0.5, '#3b82f6', t);
-    drawDummy(canvas.width*0.75, canvas.height*0.5, '#ef4444', t+1.5);
+    drawDummy(canvas.width*0.25,canvas.height*0.55,'#3b82f6',t);
+    drawDummy(canvas.width*0.75,canvas.height*0.55,'#ef4444',t+1.5);
     if(isRecording){
       [0,1].forEach(idx=>{
-        scoreAccum[idx].post.push(2.2+Math.sin(t+idx)*0.7);
-        scoreAccum[idx].stance.push(1.4+Math.cos(t*0.8+idx)*0.5);
-        scoreAccum[idx].balance.push(1.5+Math.sin(t*0.6+idx)*0.4);
-        scoreAccum[idx].power.push(0.8+Math.abs(Math.sin(t*1.5+idx))*1.2);
+        const motion=Math.abs(Math.sin(t*1.5+idx))*0.05;
+        if(motion>0.01){
+          lastScore[idx].power=Math.min(motion*12,2.5);
+        }
+        lastScore[idx].post  =2.0+Math.sin(t+idx)*0.4;
+        lastScore[idx].stance=1.5+Math.cos(t*0.7+idx)*0.3;
+        lastScore[idx].balance=1.5+Math.sin(t*0.5+idx)*0.2;
+        scoreAccum[idx].post.push(lastScore[idx].post);
+        scoreAccum[idx].stance.push(lastScore[idx].stance);
+        scoreAccum[idx].balance.push(lastScore[idx].balance);
+        scoreAccum[idx].power.push(lastScore[idx].power);
+        ['post','stance','balance','power'].forEach(k=>{
+          if(scoreAccum[idx][k].length>90)scoreAccum[idx][k].shift();
+        });
       });
-      updateUI();
+      updateScoreUI();
     }
     requestAnimationFrame(loop);
   };
@@ -399,75 +479,100 @@ function startDemoMode(){
 }
 
 function drawDummy(cx,cy,color,t){
-  const s = canvas.height * 0.18;
-  ctx.strokeStyle=color; ctx.lineWidth=3; ctx.fillStyle=color;
-  const larm = Math.sin(t)*0.4, rarm = Math.sin(t+Math.PI)*0.4;
-  const lleg = Math.sin(t*0.7)*0.2, rleg = Math.sin(t*0.7+Math.PI)*0.2;
-  const pts = {
-    head:[cx, cy-s*2.2],
-    neck:[cx, cy-s*1.8],
-    ls:[cx-s*0.5, cy-s*1.5],
-    rs:[cx+s*0.5, cy-s*1.5],
-    le:[cx-s*(0.9+larm), cy-s*(0.8-Math.abs(larm)*0.3)],
-    re:[cx+s*(0.9+rarm), cy-s*(0.8-Math.abs(rarm)*0.3)],
-    lw:[cx-s*(1.2+larm*1.5), cy-s*(0.3-larm*0.5)],
-    rw:[cx+s*(1.2+rarm*1.5), cy-s*(0.3-rarm*0.5)],
-    lh:[cx-s*0.3, cy],
-    rh:[cx+s*0.3, cy],
-    lk:[cx-s*(0.4+lleg), cy+s*(1.2+Math.abs(lleg)*0.5)],
-    rk:[cx+s*(0.4+rleg), cy+s*(1.2+Math.abs(rleg)*0.5)],
-    la:[cx-s*0.4, cy+s*2.2],
-    ra:[cx+s*0.4, cy+s*2.2],
+  const s=canvas.height*0.18;
+  ctx.strokeStyle=color;ctx.lineWidth=3;ctx.fillStyle=color;
+  const la=Math.sin(t)*0.4,ra=Math.sin(t+Math.PI)*0.4;
+  const pts={
+    head:[cx,cy-s*2.2],ls:[cx-s*.5,cy-s*1.5],rs:[cx+s*.5,cy-s*1.5],
+    le:[cx-s*(.9+la),cy-s*(.8-Math.abs(la)*.3)],re:[cx+s*(.9+ra),cy-s*(.8-Math.abs(ra)*.3)],
+    lw:[cx-s*(1.2+la*1.5),cy-s*(.3-la*.5)],rw:[cx+s*(1.2+ra*1.5),cy-s*(.3-ra*.5)],
+    lh:[cx-s*.3,cy],rh:[cx+s*.3,cy],
+    lk:[cx-s*.4,cy+s*1.2],rk:[cx+s*.4,cy+s*1.2],
+    la:[cx-s*.4,cy+s*2.2],ra:[cx+s*.4,cy+s*2.2],
   };
-  const bones=[['neck','ls'],['neck','rs'],['ls','le'],['le','lw'],['rs','re'],['re','rw'],
-    ['ls','lh'],['rs','rh'],['lh','rh'],['lh','lk'],['rh','rk'],['lk','la'],['rk','ra']];
-  bones.forEach(([a,b])=>{
+  [['ls','rs'],['ls','le'],['le','lw'],['rs','re'],['re','rw'],
+   ['ls','lh'],['rs','rh'],['lh','rh'],['lh','lk'],['rh','rk'],['lk','la'],['rk','ra']
+  ].forEach(([a,b])=>{
     ctx.beginPath();ctx.moveTo(...pts[a]);ctx.lineTo(...pts[b]);ctx.stroke();
   });
-  ctx.beginPath();ctx.arc(...pts.head,s*0.4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy-s*2.2,s*.4,0,Math.PI*2);ctx.fill();
 }
 
-// ── 수학 유틸
-function dist(a,b){ return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2); }
+// ── 유틸
+function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
 function angle3(a,b,c){
-  const ab={x:a.x-b.x,y:a.y-b.y}, cb={x:c.x-b.x,y:c.y-b.y};
+  const ab={x:a.x-b.x,y:a.y-b.y},cb={x:c.x-b.x,y:c.y-b.y};
   const dot=ab.x*cb.x+ab.y*cb.y;
   const mag=Math.sqrt((ab.x**2+ab.y**2)*(cb.x**2+cb.y**2));
   return mag===0?0:Math.acos(Math.max(-1,Math.min(1,dot/mag)))*180/Math.PI;
 }
-function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+function avg(arr){return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;}
 
-// ── 컨트롤
+function updateDetectBadges(left,right){
+  const bl=document.getElementById('badgeLeft');
+  const br=document.getElementById('badgeRight');
+  bl.textContent=left?'🔵 청 인식됨':'🔵 청 대기';
+  br.textContent=right?'🔴 홍 인식됨':'🔴 홍 대기';
+  bl.className='detect-badge blue'+(left?' found':'');
+  br.className='detect-badge red' +(right?' found':'');
+}
+
+function setPhase(p){
+  phase=p;
+  const phases=['loading','detecting','ready','locked','recording'];
+  const labels=['loading','detecting','locked','recording'];
+  document.getElementById('phase0').className='phase-step'+(p!=='loading'?' done':' active');
+  document.getElementById('phase1').className='phase-step'+(p==='detecting'?' active':p==='locked'||p==='recording'?' done':'');
+  document.getElementById('phase2').className='phase-step'+(p==='locked'?' active':p==='recording'?' done':'');
+  document.getElementById('phase3').className='phase-step'+(p==='recording'?' active':'');
+}
+
 function toggleRecord(){
-  isRecording = !isRecording;
-  const btn = document.getElementById('recordBtn');
-  btn.textContent = isRecording ? '🛑 측정 종료' : '⚔️ 측정 시작';
-  btn.classList.toggle('recording', isRecording);
+  if(phase!=='locked'&&phase!=='recording') return;
+  isRecording=!isRecording;
+  phase=isRecording?'recording':'locked';
+  setPhase(phase);
+  const btn=document.getElementById('recordBtn');
+  btn.textContent=isRecording?'🛑 측정 종료':'⚔️ 측정 시작';
+  btn.classList.toggle('recording',isRecording);
   if(isRecording){
-    scoreAccum = [{post:[],stance:[],balance:[],power:[]},{post:[],stance:[],balance:[],power:[]}];
-    document.getElementById('resultBar').textContent = '측정 중...';
+    scoreAccum=[{post:[],stance:[],balance:[],power:[]},{post:[],stance:[],balance:[],power:[]}];
+    lastScore=[{post:0,stance:0,balance:0,power:0},{post:0,stance:0,balance:0,power:0}];
+    setResult('⚔️ 측정 중...');
+  } else {
+    // 측정 종료 → 최종 결과
+    const s0=parseFloat(document.getElementById('score0').textContent)||0;
+    const s1=parseFloat(document.getElementById('score1').textContent)||0;
+    if(s0>s1) setResult(`🏆 최종 결과 — 🔵 청 코너 승! (${s0} vs ${s1})`);
+    else if(s1>s0) setResult(`🏆 최종 결과 — 🔴 홍 코너 승! (${s1} vs ${s0})`);
+    else setResult(`🏆 최종 결과 — 동점! (${s0})`);
   }
 }
 
 function resetAll(){
-  isRecording = false;
-  scoreAccum = [{post:[],stance:[],balance:[],power:[]},{post:[],stance:[],balance:[],power:[]}];
-  prevLM = [null,null];
+  isRecording=false;phase='detecting';
+  detectedLeft=false;detectedRight=false;
+  scoreAccum=[{post:[],stance:[],balance:[],power:[]},{post:[],stance:[],balance:[],power:[]}];
+  lastScore=[{post:0,stance:0,balance:0,power:0},{post:0,stance:0,balance:0,power:0}];
+  prevLM=[null,null];framesSinceMotion=[0,0];
   [0,1].forEach(idx=>{
-    document.getElementById(`score${idx}`).textContent='0.0';
+    document.getElementById(`score${idx}`).textContent='-';
     ['0','1','2','3'].forEach(j=>document.getElementById(`i${idx}_${j}`).textContent='-');
   });
   document.getElementById('recordBtn').textContent='⚔️ 측정 시작';
-  document.getElementById('recordBtn').classList.remove('recording');
-  document.getElementById('resultBar').textContent='측정을 시작하세요';
+  document.getElementById('recordBtn').classList.remove('recording','active');
+  document.getElementById('lock-overlay').style.display='none';
+  updateDetectBadges(false,false);
+  setPhase('detecting');
+  setResult('① 두 선수가 화면 좌우에 서주세요');
 }
 
-function setStatus(text,sub){
-  document.getElementById('statusText').innerHTML=text.replace(/\n/,'<br>');
-  document.getElementById('statusSub').textContent=sub;
+function setStatus(t,s){
+  document.getElementById('statusText').innerHTML=t.replace(/\n/,'<br>');
+  document.getElementById('statusSub').textContent=s;
 }
+function setResult(t){document.getElementById('resultBar').textContent=t;}
 
-// 시작
 init();
 </script>
 </body>
