@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>AI 품새 심판 v7</title>
+<title>AI 품새 심판 v8</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -70,7 +70,8 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
   border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;
   text-align:center;font-family:'Black Han Sans',sans-serif;font-size:18px;
   letter-spacing:2px;min-height:52px;}
-.debug{font-size:10px;color:rgba(255,255,255,0.25);text-align:center;padding:2px 0;}
+.debug{font-size:10px;color:rgba(255,255,255,0.25);text-align:center;padding:2px 0;
+  word-break:break-all;}
 </style>
 </head>
 <body>
@@ -94,8 +95,8 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
     </div>
     <div id="status-overlay">
       <div class="loader"></div>
-      <div class="status-text" id="statusText">AI 엔진 로딩 중...<br>MoveNet 2인 인식 모델 준비 중</div>
-      <div class="status-sub" id="statusSub">TensorFlow.js 로딩 중 (10~20초)</div>
+      <div class="status-text" id="statusText">AI 엔진 로딩 중...</div>
+      <div class="status-sub" id="statusSub">TensorFlow.js + MoveNet 준비 중</div>
     </div>
   </div>
   <div class="score-board">
@@ -128,10 +129,9 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
   <div class="debug" id="debugMsg">초기화 중...</div>
 </div>
 
-<!-- TensorFlow.js + MoveNet -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.10.0/dist/tf-core.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.10.0/dist/tf-backend-webgl.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+<!-- TF.js 안정 버전 -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet@2.2.2/dist/posenet.min.js"></script>
 
 <script>
 const video=document.getElementById('video');
@@ -140,8 +140,7 @@ const ctx=canvas.getContext('2d');
 
 let phase='loading';
 let isRecording=false;
-let detector=null;
-let rafId=null;
+let net=null;
 
 let personLM=[null,null];
 let prevLM=[null,null];
@@ -156,65 +155,58 @@ let scoreAccum=[
 let framesSinceMotion=[0,0];
 let detectedLeft=false,detectedRight=false;
 
-// MoveNet 키포인트 인덱스
+// PoseNet 키포인트 인덱스
 const KP={
   nose:0,leftEye:1,rightEye:2,leftEar:3,rightEar:4,
-  leftShoulder:5,rightShoulder:6,leftElbow:7,rightElbow:8,
-  leftWrist:9,rightWrist:10,leftHip:11,rightHip:12,
-  leftKnee:13,rightKnee:14,leftAnkle:15,rightAnkle:16
+  leftShoulder:5,rightShoulder:6,
+  leftElbow:7,rightElbow:8,
+  leftWrist:9,rightWrist:10,
+  leftHip:11,rightHip:12,
+  leftKnee:13,rightKnee:14,
+  leftAnkle:15,rightAnkle:16
 };
 
 const BONES=[
-  [KP.leftShoulder,KP.rightShoulder],
-  [KP.leftShoulder,KP.leftElbow],[KP.leftElbow,KP.leftWrist],
-  [KP.rightShoulder,KP.rightElbow],[KP.rightElbow,KP.rightWrist],
-  [KP.leftShoulder,KP.leftHip],[KP.rightShoulder,KP.rightHip],
-  [KP.leftHip,KP.rightHip],
-  [KP.leftHip,KP.leftKnee],[KP.leftKnee,KP.leftAnkle],
-  [KP.rightHip,KP.rightKnee],[KP.rightKnee,KP.rightAnkle],
+  [5,6],[5,7],[7,9],[6,8],[8,10],
+  [5,11],[6,12],[11,12],
+  [11,13],[13,15],[12,14],[14,16]
 ];
 
 async function init(){
   setStatus('TensorFlow.js 로딩 중...','잠시만 기다려주세요');
+  dbg('TF.js 스크립트 로드 대기 중...');
 
   // tf 준비 대기
-  await waitFor(()=>window.tf, 15000, 'TensorFlow.js');
+  await waitFor(()=>window.tf&&window.posenet, 20000);
   await tf.ready();
-  setStatus('MoveNet 모델 로딩 중...','2인 동시 인식 모델');
-
-  // poseDetection 준비 대기
-  await waitFor(()=>window.poseDetection, 15000, 'poseDetection');
+  dbg('✅ TF.js 준비완료. 백엔드: '+tf.getBackend());
+  setStatus('PoseNet 모델 로딩 중...','2인 동시 인식 준비');
 
   try{
-    // MoveNet MultiPose Lightning — 2인 이상 동시 인식
-    detector = await poseDetection.createDetector(
-      poseDetection.SupportedModels.MoveNet,{
-        modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
-        enableSmoothing: true,
-        minPoseScore: 0.25,
-      }
-    );
-    document.getElementById('debugMsg').textContent='✅ MoveNet MultiPose 2인 인식 가동!';
+    net = await posenet.load({
+      architecture:'MobileNetV1',
+      outputStride:16,
+      inputResolution:{width:257,height:193},
+      multiplier:0.75,
+    });
+    dbg('✅ PoseNet 로드 성공!');
     setStatus('카메라 연결 중...','후방 카메라 활성화');
     await setupCamera();
-    startDetectionLoop();
+    startLoop();
   }catch(e){
-    document.getElementById('debugMsg').textContent='❌ 모델 로드 실패: '+e.message;
-    setStatus('⚠️ 모델 로드 실패','페이지를 새로고침 해주세요\n'+e.message);
+    dbg('❌ PoseNet 실패: '+e.message);
+    setStatus('❌ 모델 로드 실패','오류: '+e.message);
   }
 }
 
-function waitFor(condition, timeout=15000, name=''){
+function waitFor(cond, timeout=20000){
   return new Promise((res,rej)=>{
-    if(condition()){res();return;}
-    const start=Date.now();
+    if(cond()){res();return;}
+    const s=Date.now();
     const t=setInterval(()=>{
-      if(condition()){clearInterval(t);res();}
-      else if(Date.now()-start>timeout){
-        clearInterval(t);
-        rej(new Error(name+' 로딩 타임아웃'));
-      }
-    },200);
+      if(cond()){clearInterval(t);res();}
+      else if(Date.now()-s>timeout){clearInterval(t);rej(new Error('timeout'));}
+    },300);
   });
 }
 
@@ -231,27 +223,30 @@ async function setupCamera(){
     document.getElementById('status-overlay').style.display='none';
     setPhase('detecting');
     setResult('① 두 선수가 화면 좌우에 서주세요');
+    dbg('카메라 연결됨: '+canvas.width+'x'+canvas.height);
   }catch(err){
     setStatus('❌ 카메라 권한 없음','설정에서 카메라를 허용해주세요');
+    dbg('카메라 오류: '+err.message);
   }
 }
 
-// ── MoveNet 감지 루프
-async function startDetectionLoop(){
+async function startLoop(){
   const loop=async()=>{
-    if(video.readyState>=2&&detector){
+    if(video.readyState>=2&&net){
       canvas.width=video.videoWidth;
       canvas.height=video.videoHeight;
       try{
-        const poses=await detector.estimatePoses(video,{
-          maxPoses:2,
+        // PoseNet 다중 인물 감지
+        const poses=await net.estimateMultiplePoses(video,{
           flipHorizontal:false,
-          scoreThreshold:0.25,
+          maxDetections:2,
+          scoreThreshold:0.3,
+          nmsRadius:20,
         });
         processPoses(poses);
-      }catch(e){}
+      }catch(e){dbg('감지 오류: '+e.message);}
     }
-    rafId=requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
   };
   loop();
 }
@@ -262,14 +257,14 @@ function processPoses(poses){
 
   if(!poses||poses.length===0){
     updateBadges(false,false);
-    document.getElementById('debugMsg').textContent='인식 대기 중... 전신이 보이도록 서주세요';
+    dbg('인식 대기 중...');
     return;
   }
 
   // x좌표 기준 정렬 → 왼쪽=청(0), 오른쪽=홍(1)
   const sorted=[...poses].sort((a,b)=>{
-    const ax=getKP(a,KP.leftShoulder).x+getKP(a,KP.rightShoulder).x;
-    const bx=getKP(b,KP.leftShoulder).x+getKP(b,KP.rightShoulder).x;
+    const ax=(a.keypoints[KP.leftShoulder].position.x+a.keypoints[KP.rightShoulder].position.x)/2;
+    const bx=(b.keypoints[KP.leftShoulder].position.x+b.keypoints[KP.rightShoulder].position.x)/2;
     return ax-bx;
   });
 
@@ -294,74 +289,63 @@ function processPoses(poses){
     updateScoreUI();
   }
 
-  document.getElementById('debugMsg').textContent=
-    `감지: ${poses.length}명 | 청${detectedLeft?'✅':'❌'} 홍${detectedRight?'✅':'❌'} | MoveNet MultiPose`;
+  dbg(`감지: ${poses.length}명 | 청${detectedLeft?'✅':'❌'} 홍${detectedRight?'✅':'❌'} | PoseNet`);
 }
 
-// MoveNet 키포인트 추출 (x,y,score)
-function getKP(pose,idx){
-  const kp=pose.keypoints[idx];
-  return {x:kp.x/canvas.width, y:kp.y/canvas.height, score:kp.score||0};
-}
-
-// ── 스켈레톤 그리기
 function drawPose(pose,color){
-  const W=canvas.width,H=canvas.height;
+  const kps=pose.keypoints;
   ctx.strokeStyle=color;ctx.lineWidth=3;ctx.fillStyle=color;
-
   BONES.forEach(([a,b])=>{
-    const ka=pose.keypoints[a],kb=pose.keypoints[b];
-    if(!ka||!kb)return;
-    if((ka.score||0)<0.25||(kb.score||0)<0.25)return;
-    ctx.beginPath();ctx.moveTo(ka.x,ka.y);ctx.lineTo(kb.x,kb.y);ctx.stroke();
+    const ka=kps[a],kb=kps[b];
+    if(!ka||!kb||(ka.score||0)<0.3||(kb.score||0)<0.3)return;
+    ctx.beginPath();
+    ctx.moveTo(ka.position.x,ka.position.y);
+    ctx.lineTo(kb.position.x,kb.position.y);
+    ctx.stroke();
   });
-
-  pose.keypoints.forEach((kp,i)=>{
-    if((kp.score||0)<0.25)return;
-    ctx.beginPath();ctx.arc(kp.x,kp.y,i===0?8:5,0,Math.PI*2);ctx.fill();
+  kps.forEach((kp,i)=>{
+    if((kp.score||0)<0.3)return;
+    ctx.beginPath();
+    ctx.arc(kp.position.x,kp.position.y,i===0?8:5,0,Math.PI*2);
+    ctx.fill();
   });
 }
 
-// ── 채점 (MoveNet 좌표는 픽셀 단위 → 정규화 필요)
+// 채점 (픽셀 좌표 → 정규화)
 function scoreOnePerson(pose,idx){
   const W=canvas.width,H=canvas.height;
   if(!W||!H)return;
+  const kps=pose.keypoints;
 
-  // 픽셀→정규화 (0~1)
-  const kp=pose.keypoints.map(k=>({
-    x:k.x/W, y:k.y/H, score:k.score||0
-  }));
+  function n(i){
+    const k=kps[i];
+    return {x:k.position.x/W,y:k.position.y/H,score:k.score||0};
+  }
 
-  const ls=kp[KP.leftShoulder], rs=kp[KP.rightShoulder];
-  const lw=kp[KP.leftWrist],   rw=kp[KP.rightWrist];
-  const lh=kp[KP.leftHip],     rh=kp[KP.rightHip];
-  const lk=kp[KP.leftKnee],    rk=kp[KP.rightKnee];
-  const la=kp[KP.leftAnkle],   ra=kp[KP.rightAnkle];
+  const ls=n(KP.leftShoulder),rs=n(KP.rightShoulder);
+  const lw=n(KP.leftWrist),   rw=n(KP.rightWrist);
+  const lh=n(KP.leftHip),     rh=n(KP.rightHip);
+  const lk=n(KP.leftKnee),    rk=n(KP.rightKnee);
+  const la=n(KP.leftAnkle),   ra=n(KP.rightAnkle);
 
   if(ls.score<0.3||rs.score<0.3)return;
 
-  // 1. 자세 (3.5점)
-  const lArm=dist(ls,lw), rArm=dist(rs,rw);
+  const lArm=dist(ls,lw),rArm=dist(rs,rw);
   const sym=1-Math.min(Math.abs(lArm-rArm),0.3)/0.3;
   const wDiff=Math.abs(lw.y-rw.y);
   const post=Math.min((sym*0.5+(lArm+rArm)*2*0.3+Math.max(0,1-wDiff*4)*0.2)*3.5,3.5);
 
-  // 2. 서기 (2.0점)
-  const lKA=angle3(lh,lk,la), rKA=angle3(rh,rk,ra), avgK=(lKA+rKA)/2;
+  const lKA=angle3(lh,lk,la),rKA=angle3(rh,rk,ra),avgK=(lKA+rKA)/2;
   const stance=avgK>=120&&avgK<=150?2.0:avgK>=90?1.8:Math.max(0,2.0-Math.abs(avgK-135)/40);
 
-  // 3. 균형 (2.0점)
   const bal=Math.max(0,2.0-(Math.abs(ls.y-rs.y)*6+Math.abs(lh.y-rh.y)*4));
 
-  // 4. 파워 (2.5점) — 움직임 있을 때만 갱신
   let power=lastScore[idx].power;
   if(prevLM[idx]){
-    const pW=canvas.width, pH=canvas.height;
-    const plw={x:prevLM[idx].keypoints[KP.leftWrist].x/pW,  y:prevLM[idx].keypoints[KP.leftWrist].y/pH};
-    const prw={x:prevLM[idx].keypoints[KP.rightWrist].x/pW, y:prevLM[idx].keypoints[KP.rightWrist].y/pH};
-    const plk={x:prevLM[idx].keypoints[KP.leftKnee].x/pW,   y:prevLM[idx].keypoints[KP.leftKnee].y/pH};
-    const prk={x:prevLM[idx].keypoints[KP.rightKnee].x/pW,  y:prevLM[idx].keypoints[KP.rightKnee].y/pH};
-    const motion=dist(lw,plw)+dist(rw,prw)+dist(lk,plk)*0.5+dist(rk,prk)*0.5;
+    const pw=canvas.width,ph=canvas.height;
+    function pn(i){const k=prevLM[idx].keypoints[i];return {x:k.position.x/pw,y:k.position.y/ph};}
+    const motion=dist(lw,pn(KP.leftWrist))+dist(rw,pn(KP.rightWrist))
+      +dist(lk,pn(KP.leftKnee))*0.5+dist(rk,pn(KP.rightKnee))*0.5;
     if(motion>0.01){
       power=Math.min(motion*12,2.5);
       lastScore[idx].power=power;
@@ -372,11 +356,10 @@ function scoreOnePerson(pose,idx){
   }
   prevLM[idx]=pose;
 
-  // 스무딩
   const sm=0.12;
-  lastScore[idx].post   =lastScore[idx].post   *(1-sm)+post   *sm;
-  lastScore[idx].stance =lastScore[idx].stance *(1-sm)+stance *sm;
-  lastScore[idx].balance=lastScore[idx].balance*(1-sm)+bal    *sm;
+  lastScore[idx].post=lastScore[idx].post*(1-sm)+post*sm;
+  lastScore[idx].stance=lastScore[idx].stance*(1-sm)+stance*sm;
+  lastScore[idx].balance=lastScore[idx].balance*(1-sm)+bal*sm;
 
   scoreAccum[idx].post.push(lastScore[idx].post);
   scoreAccum[idx].stance.push(lastScore[idx].stance);
@@ -487,6 +470,7 @@ function setStatus(t,s){
   document.getElementById('statusSub').textContent=s;
 }
 function setResult(t){document.getElementById('resultBar').textContent=t;}
+function dbg(t){document.getElementById('debugMsg').textContent=t;}
 
 init();
 </script>
