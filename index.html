@@ -151,7 +151,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
       <div class="conn-dot waiting" id="connDot"></div>
       <div class="conn-text" id="connText">Fold4 연결 대기 중...</div>
     </div>
-    <button class="btn btn-primary" id="skipConnBtn" onclick="skipConnection()">Fold4 없이 단일 카메라로 시작</button>
+    <button class="btn btn-primary" id="dualBtn" onclick="startDual()" style="display:none">🎥 2대 카메라로 시작</button>
+    <button class="btn btn-secondary" id="skipConnBtn" onclick="skipConnection()">📱 Fold4 없이 단일 카메라로 시작</button>
     <div class="debug" id="dbg2">PeerJS 초기화 중...</div>
   </div>
 
@@ -350,11 +351,18 @@ function initPeer(){
       document.getElementById('cam1txt').textContent='Fold4 연결됨 ✅';
       document.getElementById('cam1overlay').style.display='none';
       document.getElementById('connDot').className='conn-dot connected';
-      document.getElementById('connText').textContent='Fold4 연결됨! 측정을 시작하세요';
-      dbg2('✅ Fold4 영상 수신 중');
+      document.getElementById('connText').textContent='✅ Fold4 연결됨!';
+      document.getElementById('dualBtn').style.display='';
+      document.getElementById('skipConnBtn').style.display='none';
+      dbg2('✅ Fold4 영상 수신 중 — 2대 카메라로 시작 버튼을 누르세요');
     });
   });
   peer.on('error',(e)=>dbg2('PeerJS 오류: '+e.type));
+}
+
+function startDual(){
+  useRemote=true;
+  startCamera();
 }
 
 function skipConnection(){
