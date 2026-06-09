@@ -488,8 +488,13 @@ function onResults(results){
 
   if(isCalibrating&&cam===0)measureBody(lm);
   if(isRunning&&isScoring){
-    if(cam===0)scoreFrame0(lm); // S25 정면
-    else scoreFrame1(lm);       // Fold4 측면
+    if(!useRemote){
+      // 단일 카메라 모드 → 서기/절도/발차기 포함 전체 채점
+      scoreFrameSingle(lm);
+    } else {
+      if(cam===0)scoreFrame0(lm); // S25 정면
+      else scoreFrame1(lm);       // Fold4 측면
+    }
     updateLiveUI();
   }
 }
@@ -647,6 +652,7 @@ function scoreFrame1(lm){
 
 // 단일 카메라 모드 (Fold4 없을 때)
 function scoreFrameSingle(lm){
+  if(!lm)return;
   // 정면만 있을 때는 v3 로직 동일하게
   scoreFrame0(lm);
   const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14];
@@ -897,9 +903,6 @@ function av(arr){return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;}
 function dbg(t){document.getElementById('dbg').textContent=t;}
 async function waitLibs(){
   return new Promise(res=>{const s=Date.now();const t=setInterval(()=>{if(window.Pose&&window.drawConnectors){clearInterval(t);res();}else if(Date.now()-s>25000){clearInterval(t);res();}},300);});
-}
-async function initPose(){
-  try{const pose=new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});pose.setOptions({modelComplexity:1,smoothLandmarks:true,enableSegmentation:false,minDetectionConfidence:0.5,minTrackingConfidence:0.5});pose.onResults((r)=>{if(!useRemote&&currentCam===1)scoreFrameSingle(r.poseLandmarks?r.poseLandmarks:null);onResults(r);});poseInst=pose;dbg('✅ 준비');return true;}catch(e){dbg('❌:'+e.message);return false;}
 }
 (async()=>{await waitLibs();if(window.Pose)await initPose();else dbg('⚠️ 라이브러리 로드 실패');})();
 </script>
