@@ -270,7 +270,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
 // ── 상태
 let peer=null, remoteStream=null, roomCode='';
@@ -335,29 +335,46 @@ function startSetup(){
 }
 
 function initPeer(){
-  peer=new Peer('poomsae-main-'+roomCode,{
-    host:'0.peerjs.com',port:443,path:'/',secure:true,
-    config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}
-  });
-  peer.on('open',()=>{
-    document.getElementById('dbg2').textContent='✅ 방 번호 활성화: '+roomCode;
-  });
-  peer.on('call',(call)=>{
-    call.answer(); // 영상 없이 수신만
-    call.on('stream',(stream)=>{
-      remoteStream=stream;
-      useRemote=true;
-      document.getElementById('remoteVideo').srcObject=stream;
-      document.getElementById('cam1txt').textContent='Fold4 연결됨 ✅';
-      document.getElementById('cam1overlay').style.display='none';
-      document.getElementById('connDot').className='conn-dot connected';
-      document.getElementById('connText').textContent='✅ Fold4 연결됨!';
-      document.getElementById('dualBtn').style.display='';
-      document.getElementById('skipConnBtn').style.display='none';
-      dbg2('✅ Fold4 영상 수신 중 — 2대 카메라로 시작 버튼을 누르세요');
+  try{
+    if(typeof Peer === 'undefined'){
+      dbg2('⚠️ PeerJS 로드 실패 — Fold4 연결 불가, 단일 카메라만 가능');
+      return;
+    }
+    peer=new Peer('poomsae-main-'+roomCode,{
+      host:'0.peerjs.com',port:443,path:'/',secure:true,
+      config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}
     });
-  });
-  peer.on('error',(e)=>dbg2('PeerJS 오류: '+e.type));
+    peer.on('open',()=>{
+      document.getElementById('dbg2').textContent='✅ 방 번호 활성화 — Fold4에서 입력: '+roomCode;
+    });
+    peer.on('call',(call)=>{
+      call.answer();
+      call.on('stream',(stream)=>{
+        remoteStream=stream;
+        useRemote=true;
+        document.getElementById('remoteVideo').srcObject=stream;
+        document.getElementById('cam1txt').textContent='Fold4 연결됨 ✅';
+        document.getElementById('cam1overlay').style.display='none';
+        document.getElementById('connDot').className='conn-dot connected';
+        document.getElementById('connText').textContent='✅ Fold4 연결됨!';
+        document.getElementById('dualBtn').style.display='';
+        document.getElementById('skipConnBtn').style.display='none';
+        dbg2('✅ Fold4 영상 수신 중 — 2대 카메라로 시작 버튼을 누르세요');
+      });
+    });
+    peer.on('error',(e)=>{
+      if(e.type==='unavailable-id'){
+        // 방번호 충돌 시 새 번호로 재시도
+        roomCode=String(Math.floor(1000+Math.random()*9000));
+        document.getElementById('roomCode').textContent=roomCode;
+        setTimeout(initPeer, 500);
+      } else {
+        dbg2('PeerJS 오류: '+e.type+' — 단일 카메라로 시작하세요');
+      }
+    });
+  }catch(e){
+    dbg2('PeerJS 초기화 실패: '+e.message);
+  }
 }
 
 function startDual(){
@@ -419,11 +436,6 @@ async function startCamera(){
   isRunning=true;isLocked=false;isScoring=false;
   mainLoop();
 }
-
-// ── PeerJS에서 연결 후 카메라 시작 버튼
-peer&&peer.on&&document.getElementById('skipConnBtn')&&(document.getElementById('skipConnBtn').onclick=()=>{
-  useRemote=!!remoteStream;startCamera();
-});
 
 // ── Pose 초기화
 async function initPose(){
