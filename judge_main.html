@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>품새 AI 심판 (S25)</title>
+<title>품새 AI 심판 (S25 메인)</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -25,244 +25,219 @@ body{background:#080c14;color:#fff;font-family:'Noto Sans KR',sans-serif;min-hei
 .btn-gold{background:linear-gradient(135deg,#b45309,#d97706);color:#fff;}
 .btn-green{background:linear-gradient(135deg,#15803d,#22c55e);color:#fff;}
 .btn-row{display:flex;gap:8px;}.btn-row .btn{flex:1;}
-
-/* 방 번호 */
 .room-box{background:rgba(99,102,241,0.1);border:2px solid rgba(99,102,241,0.5);border-radius:16px;padding:20px;text-align:center;display:flex;flex-direction:column;gap:8px;}
 .room-label{font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:1px;}
-.room-code{font-family:'Black Han Sans',sans-serif;font-size:52px;letter-spacing:8px;color:#c7d2fe;}
+.room-code{font-family:'Black Han Sans',sans-serif;font-size:60px;letter-spacing:10px;color:#c7d2fe;}
 .room-sub{font-size:11px;color:rgba(255,255,255,0.35);}
-.conn-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);}
-.conn-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.conn-dot.waiting{background:#fbbf24;animation:blink 0.8s ease-in-out infinite;}
-.conn-dot.connected{background:#4ade80;box-shadow:0 0 8px #4ade80;}
-.conn-dot.disconnected{background:#f87171;}
+.conn-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dot.w{background:#fbbf24;animation:blink 0.8s ease-in-out infinite;}
+.dot.ok{background:#4ade80;box-shadow:0 0 8px #4ade80;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.conn-text{font-size:12px;color:rgba(255,255,255,0.6);}
-
-/* 카메라 */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.conn-txt{font-size:12px;color:rgba(255,255,255,0.6);}
 .cameras{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .cam-box{position:relative;background:#000;border-radius:12px;overflow:hidden;border:1.5px solid rgba(255,255,255,0.1);aspect-ratio:4/3;}
-.cam-box.active-cam{border-color:#818cf8;}
-.cam-label{position:absolute;top:6px;left:6px;z-index:5;background:rgba(0,0,0,0.7);border-radius:6px;padding:3px 8px;font-family:'Black Han Sans',sans-serif;font-size:10px;color:#c7d2fe;}
+.cam-lbl{position:absolute;top:6px;left:6px;z-index:5;background:rgba(0,0,0,0.7);border-radius:6px;padding:3px 8px;font-family:'Black Han Sans',sans-serif;font-size:10px;color:#c7d2fe;}
 video{width:100%;height:100%;object-fit:cover;display:block;}
 canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
-.detect-dot{position:absolute;top:6px;right:6px;z-index:5;width:8px;height:8px;border-radius:50%;background:#f87171;transition:all 0.3s;}
-.detect-dot.ok{background:#4ade80;box-shadow:0 0 6px #4ade80;}
-
-/* 보정/컨트롤 */
+.det{position:absolute;top:6px;right:6px;z-index:5;width:8px;height:8px;border-radius:50%;background:#f87171;}
+.det.ok{background:#4ade80;box-shadow:0 0 6px #4ade80;}
 .phase-bar{display:flex;gap:5px;}
-.phase-step{flex:1;padding:6px;border-radius:7px;text-align:center;font-family:'Black Han Sans',sans-serif;font-size:10px;letter-spacing:0.5px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);transition:all 0.3s;}
-.phase-step.active{background:rgba(99,102,241,0.3);border-color:#818cf8;color:#c7d2fe;}
-.phase-step.done{background:rgba(74,222,128,0.12);border-color:#4ade80;color:#4ade80;}
-
-/* 점수판 */
+.ph{flex:1;padding:6px;border-radius:7px;text-align:center;font-family:'Black Han Sans',sans-serif;font-size:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);}
+.ph.active{background:rgba(99,102,241,0.3);border-color:#818cf8;color:#c7d2fe;}
+.ph.done{background:rgba(74,222,128,0.12);border-color:#4ade80;color:#4ade80;}
 .score-main{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;}
 .score-top{display:flex;justify-content:space-between;align-items:center;}
-.score-label{font-family:'Black Han Sans',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:1px;}
-.score-total-wrap{display:flex;align-items:baseline;gap:3px;}
-.score-total{font-family:'Black Han Sans',sans-serif;font-size:40px;background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.score-lbl{font-family:'Black Han Sans',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);}
+.score-num{font-family:'Black Han Sans',sans-serif;font-size:40px;background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .score-max{font-size:13px;color:rgba(255,255,255,0.3);}
 .score-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
-.score-box{background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;}
-.score-box-label{font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:2px;}
-.score-box-val{font-family:'Black Han Sans',sans-serif;font-size:18px;color:#c7d2fe;}
-.score-box-src{font-size:8px;color:rgba(255,255,255,0.2);}
+.sb{background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;}
+.sb-lbl{font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:2px;}
+.sb-val{font-family:'Black Han Sans',sans-serif;font-size:18px;color:#c7d2fe;}
+.sb-src{font-size:8px;color:rgba(255,255,255,0.2);}
 .kiai-row{display:flex;align-items:center;gap:6px;}
 .kiai-bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden;}
 .kiai-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#fbbf24,#f59e0b);width:0%;}
-.kiai-cnt{font-size:10px;color:#fbbf24;}
-.freeze-bar{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);}
-.freeze-fill-wrap{flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;}
-.freeze-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:2px;transition:width 0.5s;}
-.freeze-lbl{font-size:10px;color:#fbbf24;min-width:40px;text-align:right;}
-
-/* 조정 화면 */
-.adjust-header{background:rgba(99,102,241,0.1);border:1.5px solid rgba(99,102,241,0.4);border-radius:14px;padding:14px;text-align:center;display:flex;flex-direction:column;gap:4px;}
+.frz{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);}
+.frz-wrap{flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;}
+.frz-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:2px;transition:width 0.5s;}
+.adj-hdr{background:rgba(99,102,241,0.1);border:1.5px solid rgba(99,102,241,0.4);border-radius:14px;padding:14px;text-align:center;display:flex;flex-direction:column;gap:4px;}
 .adj-name{font-family:'Black Han Sans',sans-serif;font-size:15px;color:#c7d2fe;}
-.adj-ai{font-family:'Black Han Sans',sans-serif;font-size:44px;background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.adj-score{font-family:'Black Han Sans',sans-serif;font-size:44px;background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .adj-sub{font-size:11px;color:rgba(255,255,255,0.35);}
-.adjust-list{display:flex;flex-direction:column;gap:7px;}
-.adjust-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:10px;padding:8px 12px;border:1px solid rgba(255,255,255,0.07);}
-.adj-item-label{flex:1;display:flex;flex-direction:column;gap:1px;}
+.adj-list{display:flex;flex-direction:column;gap:7px;}
+.adj-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:10px;padding:8px 12px;border:1px solid rgba(255,255,255,0.07);}
+.adj-item-lbl{flex:1;display:flex;flex-direction:column;gap:1px;}
 .adj-item-name{font-size:11px;color:rgba(255,255,255,0.6);}
 .adj-item-ai{font-size:10px;color:rgba(255,255,255,0.3);}
 .adj-val{font-family:'Black Han Sans',sans-serif;font-size:18px;color:#a5b4fc;min-width:32px;text-align:center;}
-.adj-btn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
-.adj-btn:active{transform:scale(0.85);}
-.adj-plus{background:rgba(74,222,128,0.2);color:#4ade80;border:1px solid rgba(74,222,128,0.4);}
-.adj-minus{background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4);}
-.judge-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:10px;padding:8px 12px;border:1px solid rgba(255,255,255,0.07);}
-.judge-label-w{flex:1;display:flex;flex-direction:column;gap:1px;}
-.judge-name-t{font-size:11px;color:rgba(255,255,255,0.6);}
-.judge-pts-t{font-size:9px;color:rgba(255,255,255,0.3);}
-.jval{font-family:'Black Han Sans',sans-serif;font-size:16px;min-width:30px;text-align:center;}
-.jval.pos{color:#4ade80;}.jval.neg{color:#f87171;}.jval.zero{color:rgba(255,255,255,0.35);}
-.jbtn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
-.jbtn:active{transform:scale(0.85);}
-.jbtn-p{background:rgba(74,222,128,0.2);color:#4ade80;border:1px solid rgba(74,222,128,0.4);}
-.jbtn-m{background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4);}
-.final-summary{background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:7px;}
-.final-row{display:flex;justify-content:space-between;align-items:center;}
-.final-row-lbl{font-size:12px;color:rgba(255,255,255,0.45);}
-.final-row-val{font-family:'Black Han Sans',sans-serif;font-size:17px;}
-.final-total-row{display:flex;justify-content:space-between;align-items:center;padding-top:7px;border-top:1px solid rgba(255,255,255,0.08);}
-.final-total-lbl{font-family:'Black Han Sans',sans-serif;font-size:14px;color:rgba(255,255,255,0.6);}
-.final-total-val{font-family:'Black Han Sans',sans-serif;font-size:34px;color:#a5b4fc;}
-
-/* 순위 */
+.xbtn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
+.xbtn:active{transform:scale(0.85);}
+.xbtn-p{background:rgba(74,222,128,0.2);color:#4ade80;border:1px solid rgba(74,222,128,0.4);}
+.xbtn-m{background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4);}
+.ji{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:10px;padding:8px 12px;border:1px solid rgba(255,255,255,0.07);}
+.ji-lbl{flex:1;display:flex;flex-direction:column;gap:1px;}
+.ji-name{font-size:11px;color:rgba(255,255,255,0.6);}
+.ji-pts{font-size:9px;color:rgba(255,255,255,0.3);}
+.jv{font-family:'Black Han Sans',sans-serif;font-size:16px;min-width:30px;text-align:center;}
+.jv.pos{color:#4ade80;}.jv.neg{color:#f87171;}.jv.zero{color:rgba(255,255,255,0.35);}
+.fin{background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:7px;}
+.fin-row{display:flex;justify-content:space-between;align-items:center;}
+.fin-lbl{font-size:12px;color:rgba(255,255,255,0.45);}
+.fin-val{font-family:'Black Han Sans',sans-serif;font-size:17px;}
+.fin-total{display:flex;justify-content:space-between;align-items:center;padding-top:7px;border-top:1px solid rgba(255,255,255,0.08);}
+.fin-total-lbl{font-family:'Black Han Sans',sans-serif;font-size:14px;color:rgba(255,255,255,0.6);}
+.fin-total-val{font-family:'Black Han Sans',sans-serif;font-size:34px;color:#a5b4fc;}
 .rank-title{font-family:'Black Han Sans',sans-serif;font-size:18px;text-align:center;letter-spacing:2px;color:#fbbf24;}
 .rank-list{display:flex;flex-direction:column;gap:7px;width:100%;}
-.rank-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:11px;padding:10px 14px;}
-.rank-item.r1{background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.4);}
-.rank-item.r2{background:rgba(148,163,184,0.08);border-color:rgba(148,163,184,0.3);}
-.rank-item.r3{background:rgba(180,83,9,0.08);border-color:rgba(180,83,9,0.3);}
-.rank-medal{font-size:22px;min-width:28px;}
-.rank-info{flex:1;}
-.rank-name{font-family:'Black Han Sans',sans-serif;font-size:14px;}
-.rank-detail{font-size:9px;color:rgba(255,255,255,0.35);margin-top:1px;line-height:1.6;}
-.rank-score{font-family:'Black Han Sans',sans-serif;font-size:24px;}
-.r1 .rank-score{color:#fbbf24;}.r2 .rank-score{color:#94a3b8;}.r3 .rank-score{color:#b45309;}
-.debug{font-size:9px;color:rgba(255,255,255,0.15);text-align:center;word-break:break-all;}
+.ri{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:11px;padding:10px 14px;}
+.ri.r1{background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.4);}
+.ri.r2{background:rgba(148,163,184,0.08);border-color:rgba(148,163,184,0.3);}
+.ri.r3{background:rgba(180,83,9,0.08);border-color:rgba(180,83,9,0.3);}
+.ri-medal{font-size:22px;min-width:28px;}
+.ri-info{flex:1;}
+.ri-name{font-family:'Black Han Sans',sans-serif;font-size:14px;}
+.ri-detail{font-size:9px;color:rgba(255,255,255,0.35);margin-top:1px;line-height:1.6;}
+.ri-score{font-family:'Black Han Sans',sans-serif;font-size:24px;}
+.r1 .ri-score{color:#fbbf24;}.r2 .ri-score{color:#94a3b8;}.r3 .ri-score{color:#b45309;}
+.dbg{font-size:9px;color:rgba(255,255,255,0.15);text-align:center;word-break:break-all;padding:2px 0;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="title">🥋 품새 AI 심판</div>
 
-  <!-- 화면1: 설정 -->
+  <!-- S1: 이름 입력 -->
   <div class="screen active" id="s1">
     <div class="card">
       <div class="card-title">선수 이름</div>
-      <input class="name-input" id="nameInput" type="text" placeholder="이름 입력" maxlength="10" onkeydown="if(event.key==='Enter')startSetup()">
-      <button class="btn btn-primary" onclick="startSetup()">다음 →</button>
+      <input class="name-input" id="nameInput" type="text" placeholder="이름 입력" maxlength="10" onkeydown="if(event.key==='Enter')goS2()">
+      <button class="btn btn-primary" onclick="goS2()">다음 →</button>
     </div>
-    <button class="btn btn-gold" id="showRankBtn" style="display:none" onclick="goRank()">🏆 전체 순위 보기</button>
-    <div class="debug" id="dbg">준비 중...</div>
+    <button class="btn btn-gold" id="rankBtn" style="display:none" onclick="goRank()">🏆 전체 순위 보기</button>
+    <div class="dbg" id="dbg">준비 중...</div>
   </div>
 
-  <!-- 화면2: 연결 -->
+  <!-- S2: 방 번호 / 연결 -->
   <div class="screen" id="s2">
     <div class="room-box">
-      <div class="room-label">Fold4에서 입력할 방 번호</div>
+      <div class="room-label">📱 Fold4에서 입력할 방 번호</div>
       <div class="room-code" id="roomCode">----</div>
-      <div class="room-sub">judge_cam.html 을 Fold4에서 열고 이 번호를 입력하세요</div>
+      <div class="room-sub">judge_cam.html 열고 이 번호 입력하세요</div>
     </div>
-    <div class="conn-status">
-      <div class="conn-dot waiting" id="connDot"></div>
-      <div class="conn-text" id="connText">Fold4 연결 대기 중...</div>
+    <div class="conn-row">
+      <div class="dot w" id="connDot"></div>
+      <div class="conn-txt" id="connTxt">Fold4 연결 대기 중...</div>
     </div>
-    <button class="btn btn-primary" id="dualBtn" onclick="startDual()" style="display:none">🎥 2대 카메라로 시작</button>
-    <button class="btn btn-secondary" id="skipConnBtn" onclick="skipConnection()">📱 Fold4 없이 단일 카메라로 시작</button>
-    <div class="debug" id="dbg2">PeerJS 초기화 중...</div>
+    <!-- Fold4 연결되면 이 버튼 표시 -->
+    <button class="btn btn-primary" id="btn2cam" style="display:none" onclick="startWith2()">🎥 2대 카메라로 시작</button>
+    <button class="btn btn-secondary" onclick="startWith1()">📱 Fold4 없이 1대로 시작</button>
+    <div class="dbg" id="dbg2">방 번호 생성 중...</div>
   </div>
 
-  <!-- 화면3: 측정 -->
+  <!-- S3: 측정 -->
   <div class="screen" id="s3">
     <div class="phase-bar">
-      <div class="phase-step active" id="ph0">① 선수고정</div>
-      <div class="phase-step" id="ph1">② 체형보정</div>
-      <div class="phase-step" id="ph2">③ 채점중</div>
+      <div class="ph active" id="ph0">① 고정</div>
+      <div class="ph" id="ph1">② 보정</div>
+      <div class="ph" id="ph2">③ 채점</div>
     </div>
-
     <div class="cameras">
-      <!-- S25 정면 카메라 -->
-      <div class="cam-box" id="camBox0">
-        <div class="cam-label">📱 S25 정면</div>
-        <video id="localVideo" autoplay playsinline muted></video>
-        <canvas id="canvas0"></canvas>
-        <div class="detect-dot" id="det0"></div>
-        <!-- 고정 버튼 -->
-        <div id="lockOverlay" style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;z-index:20;background:linear-gradient(transparent 50%,rgba(0,0,0,0.5));">
-          <button onclick="lockPerson()" style="padding:7px 16px;border-radius:20px;background:rgba(251,191,36,0.9);border:none;color:#000;font-family:'Black Han Sans',sans-serif;font-size:11px;cursor:pointer;animation:pulse 1s ease-in-out infinite;">📌 고정</button>
+      <div class="cam-box">
+        <div class="cam-lbl">📱 S25 정면</div>
+        <video id="vid0" autoplay playsinline muted></video>
+        <canvas id="cvs0"></canvas>
+        <div class="det" id="det0"></div>
+        <div id="lockOv" style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;z-index:20;background:linear-gradient(transparent 50%,rgba(0,0,0,0.5));">
+          <button onclick="doLock()" style="padding:7px 16px;border-radius:20px;background:rgba(251,191,36,0.9);border:none;color:#000;font-family:'Black Han Sans',sans-serif;font-size:11px;cursor:pointer;animation:pulse 1s ease-in-out infinite;">📌 고정</button>
         </div>
-        <div id="cam0overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:30;">
+        <div id="ov0" style="position:absolute;inset:0;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:30;">
           <div style="width:24px;height:24px;border:2px solid rgba(99,102,241,0.3);border-top-color:#818cf8;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-          <div style="font-size:10px;color:#818cf8;" id="cam0txt">로딩 중...</div>
+          <div style="font-size:10px;color:#818cf8;" id="ov0txt">로딩 중...</div>
         </div>
       </div>
-      <!-- Fold4 측면 카메라 -->
-      <div class="cam-box" id="camBox1">
-        <div class="cam-label">📷 Fold4 측면</div>
-        <video id="remoteVideo" autoplay playsinline muted></video>
-        <canvas id="canvas1"></canvas>
-        <div class="detect-dot" id="det1"></div>
-        <div id="cam1overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:30;">
+      <div class="cam-box">
+        <div class="cam-lbl">📷 Fold4 측면</div>
+        <video id="vid1" autoplay playsinline muted></video>
+        <canvas id="cvs1"></canvas>
+        <div class="det" id="det1"></div>
+        <div id="ov1" style="position:absolute;inset:0;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:30;">
           <div style="font-size:20px;">📷</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.4);" id="cam1txt">Fold4 대기 중</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);" id="ov1txt">Fold4 대기</div>
         </div>
       </div>
     </div>
-
-    <div class="freeze-bar" id="freezeBar" style="display:none">
+    <div class="frz" id="frzBar" style="display:none">
       <span style="font-size:10px;color:#fbbf24;">⏱</span>
-      <div class="freeze-fill-wrap"><div class="freeze-fill" id="freezeFill" style="width:0%"></div></div>
-      <span class="freeze-lbl" id="freezeLbl">0초</span>
+      <div class="frz-wrap"><div class="frz-fill" id="frzFill" style="width:0%"></div></div>
+      <span style="font-size:10px;color:#fbbf24;min-width:40px;text-align:right;" id="frzLbl">0초</span>
     </div>
-
-    <div class="btn-row" id="measureBtns" style="display:none">
-      <button class="btn btn-green" id="calibBtn" onclick="startCalib()">🧍 체형 보정</button>
-      <button class="btn btn-primary" id="startBtn" onclick="startScoring()" style="display:none">▶ 채점</button>
-      <button class="btn btn-danger" id="stopBtn" onclick="stopMeasure()" style="display:none">🛑 종료</button>
+    <div class="btn-row" id="ctrlBtns" style="display:none">
+      <button class="btn btn-green" id="calibBtn" onclick="doCalib()">🧍 체형 보정</button>
+      <button class="btn btn-primary" id="startBtn" style="display:none" onclick="doStart()">▶ 채점</button>
+      <button class="btn btn-danger" id="stopBtn" style="display:none" onclick="doStop()">🛑 종료</button>
     </div>
-
     <div class="score-main">
       <div class="score-top">
-        <div class="score-label" id="scoreLabel">선수 고정 후 체형 보정하세요</div>
-        <div class="score-total-wrap">
-          <div class="score-total" id="liveTotal">-</div>
+        <div class="score-lbl" id="scoreLbl">선수 고정 후 체형 보정</div>
+        <div style="display:flex;align-items:baseline;gap:3px;">
+          <div class="score-num" id="scoreNum">-</div>
           <div class="score-max">/100</div>
         </div>
       </div>
       <div class="kiai-row">
         <span style="font-size:10px;color:rgba(255,255,255,0.4);min-width:40px;">🎤 기합</span>
         <div class="kiai-bar"><div class="kiai-fill" id="kiaiFill"></div></div>
-        <span class="kiai-cnt" id="kiaiCnt">0회</span>
+        <span style="font-size:10px;color:#fbbf24;" id="kiaiCnt">0회</span>
       </div>
       <div class="score-grid">
-        <div class="score-box"><div class="score-box-label">서기</div><div class="score-box-val" id="sStance">-</div><div class="score-box-src">/20 · 측면</div></div>
-        <div class="score-box"><div class="score-box-label">손기술</div><div class="score-box-val" id="sArm">-</div><div class="score-box-src">/20 · 정+측</div></div>
-        <div class="score-box"><div class="score-box-label">자세</div><div class="score-box-val" id="sPosture">-</div><div class="score-box-src">/20 · 정+측</div></div>
-        <div class="score-box"><div class="score-box-label">절도</div><div class="score-box-val" id="sPower">-</div><div class="score-box-src">/20 · 측면</div></div>
-        <div class="score-box"><div class="score-box-label">균형</div><div class="score-box-val" id="sBalance">-</div><div class="score-box-src">/10 · 정면</div></div>
-        <div class="score-box"><div class="score-box-label">리듬</div><div class="score-box-val" id="sRhythm">-</div><div class="score-box-src">/10 · 정+측</div></div>
+        <div class="sb"><div class="sb-lbl">서기</div><div class="sb-val" id="sc0">-</div><div class="sb-src">/20</div></div>
+        <div class="sb"><div class="sb-lbl">손기술</div><div class="sb-val" id="sc1">-</div><div class="sb-src">/20</div></div>
+        <div class="sb"><div class="sb-lbl">자세</div><div class="sb-val" id="sc2">-</div><div class="sb-src">/20</div></div>
+        <div class="sb"><div class="sb-lbl">절도</div><div class="sb-val" id="sc3">-</div><div class="sb-src">/20</div></div>
+        <div class="sb"><div class="sb-lbl">균형</div><div class="sb-val" id="sc4">-</div><div class="sb-src">/10</div></div>
+        <div class="sb"><div class="sb-lbl">리듬</div><div class="sb-val" id="sc5">-</div><div class="sb-src">/10</div></div>
       </div>
     </div>
   </div>
 
-  <!-- 화면4: 채점 조정 -->
+  <!-- S4: 채점 조정 -->
   <div class="screen" id="s4">
-    <div class="adjust-header">
+    <div class="adj-hdr">
       <div class="adj-name" id="adjName"></div>
-      <div class="adj-ai" id="adjAI">0</div>
+      <div class="adj-score" id="adjScore">0</div>
       <div class="adj-sub" id="adjSub">AI 측정 / 100점 만점</div>
     </div>
     <div class="card">
       <div class="card-title">항목별 조정 (1점 단위)</div>
-      <div class="adjust-list" id="adjustList"></div>
+      <div class="adj-list" id="adjList"></div>
     </div>
     <div class="card">
       <div class="card-title">감점 / 가산점</div>
-      <div style="display:flex;flex-direction:column;gap:7px;" id="judgeItems"></div>
+      <div style="display:flex;flex-direction:column;gap:7px;" id="jiList"></div>
     </div>
-    <div class="final-summary">
-      <div class="final-row"><span class="final-row-lbl">AI 측정</span><span class="final-row-val" id="sumAI" style="color:#a5b4fc">0</span></div>
-      <div class="final-row"><span class="final-row-lbl">항목 조정</span><span class="final-row-val" id="sumAdj" style="color:#4ade80">+0</span></div>
-      <div class="final-row"><span class="final-row-lbl">감점/가산</span><span class="final-row-val" id="sumJudge">0</span></div>
-      <div class="final-total-row"><span class="final-total-lbl">최종 점수</span><span class="final-total-val" id="sumFinal">0</span></div>
+    <div class="fin">
+      <div class="fin-row"><span class="fin-lbl">AI 측정</span><span class="fin-val" id="finAI" style="color:#a5b4fc">0</span></div>
+      <div class="fin-row"><span class="fin-lbl">항목 조정</span><span class="fin-val" id="finAdj" style="color:#4ade80">+0</span></div>
+      <div class="fin-row"><span class="fin-lbl">감점/가산</span><span class="fin-val" id="finJudge">0</span></div>
+      <div class="fin-total"><span class="fin-total-lbl">최종 점수</span><span class="fin-total-val" id="finTotal">0</span></div>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="remeasure()">🔄 재측정</button>
-      <button class="btn btn-primary" onclick="confirmScore()">✅ 확정</button>
+      <button class="btn btn-secondary" onclick="doRemeasure()">🔄 재측정</button>
+      <button class="btn btn-primary" onclick="doConfirm()">✅ 확정</button>
     </div>
   </div>
 
-  <!-- 화면5: 순위 -->
+  <!-- S5: 순위 -->
   <div class="screen" id="s5">
     <div class="rank-title">🏆 최종 순위</div>
     <div class="rank-list" id="rankList"></div>
     <div class="btn-row">
-      <button class="btn btn-primary" onclick="goInput()">➕ 다음 선수</button>
-      <button class="btn btn-secondary" onclick="resetAll()">🔄 초기화</button>
+      <button class="btn btn-primary" onclick="goS1()">➕ 다음 선수</button>
+      <button class="btn btn-secondary" onclick="doReset()">🔄 초기화</button>
     </div>
   </div>
 </div>
@@ -270,626 +245,484 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
-// ── 상태
-let peer=null, remoteStream=null, roomCode='';
-let poseInst=null, isRunning=false, isScoring=false, isLocked=false;
-let isCalibrating=false, isFrozen=false, scoringStartTime=null, frozenAt=null;
-let currentName='', useRemote=false;
+// ── 전역 상태
+let currentName='', roomCode='', useRemote=false;
+let peer=null, poseInst=null;
+let isRunning=false, isScoring=false, isFrozen=false;
+let isCalibrating=false, scoringStartTime=null, frozenAt=null;
 
 // 체형
-let bodyRef={shoulderW:0.18,armLen:0.25,legLen:0.4,hipY:0.5,shoulderY:0.3,calibrated:false};
+let BR={sw:0.18,armLen:0.25,legLen:0.4,hipY:0.5,shY:0.3,ok:false};
 
 // 각도 이력
-const HIST=10;
-let aH0={lKnee:[],rKnee:[],lElbow:[],rElbow:[]}; // S25 정면
-let aH1={lKnee:[],rKnee:[],lElbow:[],rElbow:[]}; // Fold4 측면
-let prevA0={lKnee:135,rKnee:135,lElbow:160,rElbow:160};
-let prevA1={lKnee:135,rKnee:135,lElbow:160,rElbow:160};
+const HL=10;
+let AH0={lK:[],rK:[],lE:[],rE:[]};
+let AH1={lK:[],rK:[],lE:[],rE:[]};
+let PA1={lK:135,rK:135,lE:160,rE:160};
 
-// 점수 (정면/측면 별도 누적)
-let sc0={stance:[],arm:[],posture:[],power:[],balance:[],rhythm:[]}; // S25
-let sc1={stance:[],arm:[],posture:[],power:[],balance:[],rhythm:[]}; // Fold4
-let lastScore={stance:0,arm:0,posture:14,power:0,balance:8,rhythm:0};
-let peakScore={stance:0,arm:0,posture:0,power:0,balance:0,rhythm:0};
-let motionHist0=[],motionHist1=[],frameSince=0;
-let prevLM0=null,prevLM1=null;
+// 점수
+let S0={arm:[],post:[],bal:[],rhy:[]};
+let S1={stance:[],arm:[],post:[],pwr:[],rhy:[]};
+let LS={stance:0,arm:0,post:14,pwr:0,bal:8,rhy:0};
+let PK={stance:0,arm:0,post:0,pwr:0,bal:0,rhy:0};
+let MH0=[],MH1=[],PLM0=null,PLM1=null;
 
 // 기합
-let kiaiCount=0,audioCtx=null,analyser=null,micStream=null,kiaiCooldown=false,kiaiVolHist=[];
+let KC=0,aCtx=null,anl=null,micStr=null,kCool=false,kVH=[];
 
 // 발차기
-let kickHeight=0,maxKickH=0,kickDetected=false,kickCooldown=false;
+let kickH=0,maxKH=0,kickDet=false,kickCool=false;
 
-// 채점 데이터
-let aiScoreData={stance:0,arm:0,posture:0,power:0,balance:0,rhythm:0,kiai:0,total:0};
-let adjustments={stance:0,arm:0,posture:0,power:0,balance:0,rhythm:0};
-let judgeScores={j0:0,j1:0,j2:0,j3:0};
+// 채점 결과
+let aiData={stance:0,arm:0,post:0,pwr:0,bal:0,rhy:0,kiai:0,total:0};
+let ADJ={stance:0,arm:0,post:0,pwr:0,bal:0,rhy:0};
+let JS={j0:0,j1:0,j2:0,j3:0};
 let players=[];
+let curCam=0, togCam=false;
 
 const ITEMS=[
-  {key:'stance', label:'서기',    max:20},
-  {key:'arm',    label:'손기술',  max:20},
-  {key:'posture',label:'자세',    max:20},
-  {key:'power',  label:'절도',    max:20},
-  {key:'balance',label:'균형',    max:10},
-  {key:'rhythm', label:'리듬',    max:10},
+  {k:'stance',lbl:'서기',max:20},{k:'arm',lbl:'손기술',max:20},
+  {k:'post',lbl:'자세',max:20},{k:'pwr',lbl:'절도',max:20},
+  {k:'bal',lbl:'균형',max:10},{k:'rhy',lbl:'리듬',max:10},
 ];
-const JUDGE_ITEMS=[
-  {id:'j0',name:'절도',minus:-1,plus:+1,ml:'절도 미숙 -1',pl:'절도 우수 +1'},
-  {id:'j1',name:'자세',minus:-2,plus:+2,ml:'자세 미숙 -2',pl:'자세 우수 +2'},
-  {id:'j2',name:'기합',minus:-3,plus:+3,ml:'기합 감점 -3',pl:'기합 가산 +3'},
-  {id:'j3',name:'동작',minus:-5,plus:+5,ml:'동작 틀림 -5',pl:'동작 완벽 +5'},
+const JITEMS=[
+  {id:'j0',name:'절도',m:-1,p:+1,ml:'절도 미숙 -1',pl:'절도 우수 +1'},
+  {id:'j1',name:'자세',m:-2,p:+2,ml:'자세 미숙 -2',pl:'자세 우수 +2'},
+  {id:'j2',name:'기합',m:-3,p:+3,ml:'기합 감점 -3',pl:'기합 가산 +3'},
+  {id:'j3',name:'동작',m:-5,p:+5,ml:'동작 틀림 -5',pl:'동작 완벽 +5'},
 ];
 
-// ── 방 번호 생성 & PeerJS
-function startSetup(){
-  const name=document.getElementById('nameInput').value.trim();
+// ── S1 → S2: 방 번호 생성
+function goS2(){
+  const name=g('nameInput').value.trim();
   if(!name){alert('이름을 입력해주세요!');return;}
   currentName=name;
+  // 방 번호 즉시 생성
   roomCode=String(Math.floor(1000+Math.random()*9000));
-  document.getElementById('roomCode').textContent=roomCode;
-  showScreen('s2');
-  initPeer();
+  g('roomCode').textContent=roomCode;
+  show('s2');
+  // PeerJS는 별도로 비동기 초기화 (실패해도 방 번호 표시에 영향 없음)
+  setTimeout(initPeer, 100);
 }
 
 function initPeer(){
   try{
-    if(typeof Peer === 'undefined'){
-      dbg2('⚠️ PeerJS 로드 실패 — Fold4 연결 불가, 단일 카메라만 가능');
+    if(typeof Peer==='undefined'){
+      d2('⚠️ PeerJS 로드 안됨 — 1대로만 사용 가능');
       return;
     }
+    if(peer){try{peer.destroy();}catch(e){}}
     peer=new Peer('poomsae-main-'+roomCode,{
       host:'0.peerjs.com',port:443,path:'/',secure:true,
-      config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}
+      config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}
     });
-    peer.on('open',()=>{
-      document.getElementById('dbg2').textContent='✅ 방 번호 활성화 — Fold4에서 입력: '+roomCode;
-    });
+    peer.on('open',()=>d2('✅ 방 번호 활성화! Fold4에서 '+roomCode+' 입력'));
     peer.on('call',(call)=>{
       call.answer();
       call.on('stream',(stream)=>{
-        remoteStream=stream;
-        useRemote=true;
-        document.getElementById('remoteVideo').srcObject=stream;
-        document.getElementById('cam1txt').textContent='Fold4 연결됨 ✅';
-        document.getElementById('cam1overlay').style.display='none';
-        document.getElementById('connDot').className='conn-dot connected';
-        document.getElementById('connText').textContent='✅ Fold4 연결됨!';
-        document.getElementById('dualBtn').style.display='';
-        document.getElementById('skipConnBtn').style.display='none';
-        dbg2('✅ Fold4 영상 수신 중 — 2대 카메라로 시작 버튼을 누르세요');
+        g('vid1').srcObject=stream;
+        g('ov1txt').textContent='Fold4 연결됨 ✅';
+        g('ov1').style.display='none';
+        g('connDot').className='dot ok';
+        g('connTxt').textContent='✅ Fold4 연결됨!';
+        g('btn2cam').style.display='';
+        d2('✅ Fold4 영상 수신 중');
       });
     });
     peer.on('error',(e)=>{
       if(e.type==='unavailable-id'){
-        // 방번호 충돌 시 새 번호로 재시도
         roomCode=String(Math.floor(1000+Math.random()*9000));
-        document.getElementById('roomCode').textContent=roomCode;
-        setTimeout(initPeer, 500);
+        g('roomCode').textContent=roomCode;
+        setTimeout(initPeer,800);
       } else {
-        dbg2('PeerJS 오류: '+e.type+' — 단일 카메라로 시작하세요');
+        d2('PeerJS 오류('+e.type+') — 1대로 시작하세요');
       }
     });
-  }catch(e){
-    dbg2('PeerJS 초기화 실패: '+e.message);
-  }
+  }catch(e){d2('PeerJS 실패: '+e.message);}
 }
 
-function startDual(){
-  useRemote=true;
-  startCamera();
-}
-
-function skipConnection(){
-  useRemote=false;
-  if(peer)peer.destroy();
-  startCamera();
-}
-
-function dbg2(t){document.getElementById('dbg2').textContent=t;}
+function startWith2(){useRemote=true;startCamera();}
+function startWith1(){useRemote=false;if(peer)try{peer.destroy();}catch(e){}startCamera();}
 
 // ── 카메라 시작
 async function startCamera(){
-  showScreen('s3');
-  document.getElementById('lockOverlay').style.display='flex';
-  document.getElementById('measureBtns').style.display='none';
-  document.getElementById('freezeBar').style.display='none';
-  document.getElementById('liveTotal').textContent='-';
-  ['sStance','sArm','sPosture','sPower','sBalance','sRhythm'].forEach(id=>document.getElementById(id).textContent='-');
-  kiaiCount=0;maxKickH=0;updateKiaiUI();
+  show('s3');
+  g('lockOv').style.display='flex';
+  g('ctrlBtns').style.display='none';
+  g('frzBar').style.display='none';
+  g('scoreNum').textContent='-';
+  ['sc0','sc1','sc2','sc3','sc4','sc5'].forEach(id=>g(id).textContent='-');
+  KC=0;maxKH=0;updateKiaiUI();
   isFrozen=false;scoringStartTime=null;
-  Object.keys(sc0).forEach(k=>sc0[k]=[]);
-  Object.keys(sc1).forEach(k=>sc1[k]=[]);
-  lastScore={stance:0,arm:0,posture:14,power:0,balance:8,rhythm:0};
-  peakScore={stance:0,arm:0,posture:0,power:0,balance:0,rhythm:0};
-  prevLM0=null;prevLM1=null;motionHist0=[];motionHist1=[];frameSince=0;
-  isCalibrating=false;bodyRef.calibrated=false;
-  Object.keys(aH0).forEach(k=>aH0[k]=[]);
-  Object.keys(aH1).forEach(k=>aH1[k]=[]);
+  S0={arm:[],post:[],bal:[],rhy:[]};
+  S1={stance:[],arm:[],post:[],pwr:[],rhy:[]};
+  LS={stance:0,arm:0,post:14,pwr:0,bal:8,rhy:0};
+  PK={stance:0,arm:0,post:0,pwr:0,bal:0,rhy:0};
+  MH0=[];MH1=[];PLM0=null;PLM1=null;
+  BR={sw:0.18,armLen:0.25,legLen:0.4,hipY:0.5,shY:0.3,ok:false};
+  Object.keys(AH0).forEach(k=>AH0[k]=[]);
+  Object.keys(AH1).forEach(k=>AH1[k]=[]);
+  PA1={lK:135,rK:135,lE:160,rE:160};
 
   // S25 카메라
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:480}}});
-    document.getElementById('localVideo').srcObject=stream;
-    await new Promise(r=>{document.getElementById('localVideo').onloadedmetadata=r;});
-    document.getElementById('localVideo').play();
-    document.getElementById('cam0overlay').style.display='none';
-  }catch(e){document.getElementById('cam0txt').textContent='카메라 오류';}
+    const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:480}}});
+    g('vid0').srcObject=st;
+    await new Promise(r=>{g('vid0').onloadedmetadata=r;});
+    g('vid0').play();
+    g('ov0').style.display='none';
+  }catch(e){g('ov0txt').textContent='카메라 오류';}
 
   // 마이크
   try{
     const ms=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-    micStream=ms;
-    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-    const src=audioCtx.createMediaStreamSource(ms);
-    analyser=audioCtx.createAnalyser();analyser.fftSize=256;
-    src.connect(analyser);startKiai();
+    micStr=ms;
+    aCtx=new (window.AudioContext||window.webkitAudioContext)();
+    const src=aCtx.createMediaStreamSource(ms);
+    anl=aCtx.createAnalyser();anl.fftSize=256;
+    src.connect(anl);startKiai();
   }catch(e){dbg('⚠️ 마이크 없음');}
 
   if(!poseInst){
-    document.getElementById('cam0txt').textContent='AI 로딩 중...';
-    await waitLibs();await initPose();
+    g('ov0txt').textContent='AI 로딩 중...';
+    await waitLibs();
+    try{
+      const pose=new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});
+      pose.setOptions({modelComplexity:1,smoothLandmarks:true,enableSegmentation:false,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+      pose.onResults(onPose);
+      poseInst=pose;
+      dbg('✅ MediaPipe 준비');
+    }catch(e){g('ov0txt').textContent='AI 로드 실패';return;}
   }
-  if(!poseInst){document.getElementById('cam0txt').textContent='AI 로드 실패';return;}
-  isRunning=true;isLocked=false;isScoring=false;
-  mainLoop();
+
+  isRunning=true;
+  loop();
 }
 
-// ── Pose 초기화
-async function initPose(){
-  try{
-    const pose=new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});
-    pose.setOptions({modelComplexity:1,smoothLandmarks:true,enableSegmentation:false,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
-    pose.onResults(onResults);
-    poseInst=pose;dbg('✅ MediaPipe 준비');return true;
-  }catch(e){dbg('❌:'+e.message);return false;}
-}
-
-// ── 루프: 두 카메라 번갈아 처리
-let frameToggle=false;
-async function mainLoop(){
+async function loop(){
   if(!isRunning)return;
-  const lv=document.getElementById('localVideo');
-  const rv=document.getElementById('remoteVideo');
+  const v0=g('vid0'),v1=g('vid1');
   if(poseInst){
-    if(useRemote&&!frameToggle&&rv.readyState>=2){
-      currentCam=1; // Fold4 측면
-      try{await poseInst.send({image:rv});}catch(e){}
-    } else if(lv.readyState>=2){
-      currentCam=0; // S25 정면
-      try{await poseInst.send({image:lv});}catch(e){}
+    if(useRemote&&!togCam&&v1.readyState>=2){
+      curCam=1;try{await poseInst.send({image:v1});}catch(e){}
+    } else if(v0.readyState>=2){
+      curCam=0;try{await poseInst.send({image:v0});}catch(e){}
     }
-    frameToggle=!frameToggle;
+    togCam=!togCam;
   }
-  if(isRunning)requestAnimationFrame(mainLoop);
+  if(isRunning)requestAnimationFrame(loop);
 }
 
-let currentCam=0; // 현재 처리 중인 카메라
-
-function onResults(results){
-  const cam=currentCam;
-  const canvasEl=document.getElementById('canvas'+cam);
-  const videoEl=document.getElementById(cam===0?'localVideo':'remoteVideo');
-  const rect=videoEl.getBoundingClientRect();
-  canvasEl.width=rect.width>0?rect.width:videoEl.videoWidth||320;
-  canvasEl.height=rect.height>0?rect.height:videoEl.videoHeight||240;
-  const c=canvasEl.getContext('2d');
-  c.clearRect(0,0,canvasEl.width,canvasEl.height);
-
-  const detDot=document.getElementById('det'+cam);
-  if(!results.poseLandmarks){detDot.className='detect-dot';return;}
-  detDot.className='detect-dot ok';
-
-  const lm=results.poseLandmarks;
-  drawConnectors(c,lm,POSE_CONNECTIONS,{color:cam===0?'rgba(96,165,250,0.8)':'rgba(129,140,248,0.8)',lineWidth:2});
-  drawLandmarks(c,lm,{color:cam===0?'#60a5fa':'#c084fc',lineWidth:1,radius:3});
-
-  if(isCalibrating&&cam===0)measureBody(lm);
+function onPose(res){
+  const cam=curCam;
+  const cvs=g('cvs'+cam);
+  const vid=g('vid'+cam);
+  const rect=vid.getBoundingClientRect();
+  cvs.width=rect.width>0?rect.width:vid.videoWidth||320;
+  cvs.height=rect.height>0?rect.height:vid.videoHeight||240;
+  const ctx=cvs.getContext('2d');
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  const dot=g('det'+cam);
+  if(!res.poseLandmarks){dot.className='det';return;}
+  dot.className='det ok';
+  const lm=res.poseLandmarks;
+  drawConnectors(ctx,lm,POSE_CONNECTIONS,{color:cam===0?'rgba(96,165,250,0.8)':'rgba(129,140,248,0.8)',lineWidth:2});
+  drawLandmarks(ctx,lm,{color:cam===0?'#60a5fa':'#c084fc',lineWidth:1,radius:3});
+  if(isCalibrating&&cam===0)calibBody(lm);
   if(isRunning&&isScoring){
-    if(!useRemote){
-      // 단일 카메라 모드 → 서기/절도/발차기 포함 전체 채점
-      scoreFrameSingle(lm);
-    } else {
-      if(cam===0)scoreFrame0(lm); // S25 정면
-      else scoreFrame1(lm);       // Fold4 측면
-    }
-    updateLiveUI();
+    if(!useRemote)scoreSingle(lm);
+    else if(cam===0)score0(lm);
+    else score1(lm);
+    updateUI();
   }
 }
 
-function measureBody(lm){
+function calibBody(lm){
   const ls=lm[11],rs=lm[12],lh=lm[23],rh=lm[24],la=lm[27],ra=lm[28],lw=lm[15],rw=lm[16];
   if(!ls||ls.visibility<0.5)return;
-  bodyRef.shoulderW=Math.max(d(ls,rs),0.05);
-  bodyRef.legLen=Math.max((d(lh,la)+d(rh,ra))/2,0.1);
-  bodyRef.armLen=Math.max((d(ls,lw)+d(rs,rw))/2,0.1);
-  bodyRef.hipY=(lh.y+rh.y)/2;
-  bodyRef.shoulderY=(ls.y+rs.y)/2;
-  bodyRef.calibrated=true;
+  BR.sw=Math.max(dst(ls,rs),0.05);
+  BR.legLen=Math.max((dst(lh,la)+dst(rh,ra))/2,0.1);
+  BR.armLen=Math.max((dst(ls,lw)+dst(rs,rw))/2,0.1);
+  BR.hipY=(lh.y+rh.y)/2;BR.shY=(ls.y+rs.y)/2;BR.ok=true;
 }
 
-// ── S25 정면 채점 (대칭, 균형, 손기술 좌우)
-function scoreFrame0(lm){
-  const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14];
-  const lw=lm[15],rw=lm[16],lh=lm[23],rh=lm[24];
-  const lk=lm[25],rk=lm[26];
-  if(!ls||!rs||ls.visibility<0.3)return;
-  const sw=bodyRef.calibrated?bodyRef.shoulderW:Math.max(d(ls,rs),0.05);
-  const elapsed=scoringStartTime?(Date.now()-scoringStartTime)/1000:0;
-
-  let motion=0;
-  if(prevLM0){motion=d(lw,prevLM0[15])+d(rw,prevLM0[16]);motionHist0.push(motion);if(motionHist0.length>20)motionHist0.shift();}
-  prevLM0=lm;
-  if(elapsed>10&&motion<0.006){if(!isFrozen){isFrozen=true;frozenAt={...lastScore};dbg('❄️ 동결');}return;}
-
-  const lEA=a3(ls,le,lw),rEA=a3(rs,re,rw);
-  pshH(aH0,'lElbow',lEA);pshH(aH0,'rElbow',rEA);
-  const extE=Math.max(avgH(aH0,'lElbow'),avgH(aH0,'rElbow'));
-  const retE=Math.min(avgH(aH0,'lElbow'),avgH(aH0,'rElbow'));
-
-  // 손기술 (정면 기여도 40%)
-  let arm0=0;
-  if(extE>=170)arm0=8;else if(extE>=155)arm0=6;else if(extE>=140)arm0=4;else arm0=Math.max(0,extE/140*4);
-  if(retE<=60)arm0+=4;else if(retE<=80)arm0+=3;else if(retE<=100)arm0+=2;else if(retE<=120)arm0+=1;
-  arm0=Math.min(arm0,12)*0.4; // 정면 40% 기여
-
-  // 균형 (정면 70% 기여)
-  const sTilt=Math.abs(ls.y-rs.y)/sw;
-  const hTilt=Math.abs(lh.y-rh.y)/sw;
-  let bal0=10;
-  if(sTilt>0.04)bal0-=sTilt*14;
-  if(hTilt>0.04)bal0-=hTilt*10;
-  bal0=Math.max(5,Math.min(10,bal0))*0.7;
-
-  // 자세 좌우 대칭 (정면 60%)
-  const sLean=Math.abs((ls.x+rs.x)/2-(lh.x+rh.x)/2)/sw;
-  const headD=lm[0]?Math.abs(lm[0].x-(ls.x+rs.x)/2)/sw:0;
-  let post0=20;
-  if(sTilt>0.05)post0-=sTilt*18;if(hTilt>0.05)post0-=hTilt*14;
-  if(sLean>0.08)post0-=sLean*12;if(headD>0.1)post0-=headD*8;
-  post0=Math.max(10,Math.min(20,post0))*0.6;
-
-  // 리듬 (50%)
-  let rhy0=0;
-  if(motionHist0.length>5){
-    const am=motionHist0.reduce((a,b)=>a+b,0)/motionHist0.length;
-    if(am>0.003){const cv=Math.sqrt(motionHist0.reduce((a,b)=>a+Math.pow(b-am,2),0)/motionHist0.length)/am;rhy0=Math.min(am*150,5)+Math.max(0,5-cv*2);}
-  }
-  rhy0=Math.min(rhy0,10)*0.5;
-
-  sc0.arm.push(arm0);sc0.posture.push(post0);sc0.balance.push(bal0);sc0.rhythm.push(rhy0);
-  ['arm','posture','balance','rhythm'].forEach(k=>{if(sc0[k].length>60)sc0[k].shift();});
-  Object.keys(peakScore).forEach(k=>{peakScore[k]=Math.max(peakScore[k],lastScore[k]);});
-}
-
-// ── Fold4 측면 채점 (서기 깊이, 절도, 발차기)
-function scoreFrame1(lm){
+// 단일 카메라 채점 (1대 모드)
+function scoreSingle(lm){
   const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14];
   const lw=lm[15],rw=lm[16],lh=lm[23],rh=lm[24];
   const lk=lm[25],rk=lm[26],la=lm[27],ra=lm[28];
   if(!ls||!rs||ls.visibility<0.3)return;
-  const sw=bodyRef.calibrated?bodyRef.shoulderW:Math.max(d(ls,rs),0.05);
-  const hipY=bodyRef.calibrated?bodyRef.hipY:(lh.y+rh.y)/2;
-  const shoulderY=bodyRef.calibrated?bodyRef.shoulderY:(ls.y+rs.y)/2;
-  const elapsed=scoringStartTime?(Date.now()-scoringStartTime)/1000:0;
-
-  let motion=0;
-  if(prevLM1){motion=d(lw,prevLM1[15])+d(rw,prevLM1[16])+d(lk,prevLM1[25])*0.5;motionHist1.push(motion);if(motionHist1.length>20)motionHist1.shift();}
-  prevLM1=lm;
-  if(elapsed>10&&motion<0.006)return; // 동결은 정면이 처리
-
-  const lKA=a3(lh,lk,la),rKA=a3(rh,rk,ra);
-  const lEA=a3(ls,le,lw),rEA=a3(rs,re,rw);
-  pshH(aH1,'lKnee',lKA);pshH(aH1,'rKnee',rKA);
-  pshH(aH1,'lElbow',lEA);pshH(aH1,'rElbow',rEA);
-  const avgLK=avgH(aH1,'lKnee'),avgRK=avgH(aH1,'rKnee');
-  const extE1=Math.max(avgH(aH1,'lElbow'),avgH(aH1,'rElbow'));
-  const retE1=Math.min(avgH(aH1,'lElbow'),avgH(aH1,'rElbow'));
-
-  // 서기 (측면 100%)
+  const sw=BR.ok?BR.sw:Math.max(dst(ls,rs),0.05);
+  const hipY=BR.ok?BR.hipY:(lh.y+rh.y)/2;
+  const shY=BR.ok?BR.shY:(ls.y+rs.y)/2;
+  const el=(Date.now()-scoringStartTime)/1000;
+  let mot=0;
+  if(PLM1){mot=dst(lw,PLM1[15])+dst(rw,PLM1[16])+dst(lk,PLM1[25])*0.5;MH1.push(mot);if(MH1.length>30)MH1.shift();}
+  PLM1=lm;
+  if(el>10&&mot<0.006){if(!isFrozen){isFrozen=true;frozenAt={...LS};dbg('❄️ 동결');}return;}
+  if(el<=10&&mot<0.006)return;
+  const lKA=ang(lh,lk,la),rKA=ang(rh,rk,ra);
+  const lEA=ang(ls,le,lw),rEA=ang(rs,re,rw);
+  phA(AH1,'lK',lKA);phA(AH1,'rK',rKA);phA(AH1,'lE',lEA);phA(AH1,'rE',rEA);
+  const avgLK=avH(AH1,'lK'),avgRK=avH(AH1,'rK');
+  const extE=Math.max(avH(AH1,'lE'),avH(AH1,'rE')),retE=Math.min(avH(AH1,'lE'),avH(AH1,'rE'));
   const frontK=Math.min(avgLK,avgRK),backK=Math.max(avgLK,avgRK);
-  const baseS=Math.min(8,Math.max(2,(180-frontK)/180*8));
-  let fB=0,bB=0;
-  if(frontK>=125&&frontK<=160)fB=6;else if(frontK>=110)fB=4;else if(frontK<=175)fB=3;
-  if(backK>=155&&backK<=178)bB=4;else if(backK>=145)bB=2;else if(backK>178)bB=1;
-  const footGap=Math.abs(la.x-ra.x)/sw;
-  let stance1=Math.min(baseS+fB+bB+Math.min(footGap/1.5*2,2),20);
-
-  // 손기술 (측면 60%)
-  let arm1=0;
-  if(extE1>=170)arm1=8;else if(extE1>=155)arm1=6;else if(extE1>=140)arm1=4;else arm1=Math.max(0,extE1/140*4);
-  if(retE1<=60)arm1+=4;else if(retE1<=80)arm1+=3;else if(retE1<=100)arm1+=2;else if(retE1<=120)arm1+=1;
-  arm1=Math.min(arm1,12)*0.6;
-
-  // 절도 (측면 100%)
-  const lKV=Math.abs(lKA-prevA1.lKnee),rKV=Math.abs(rKA-prevA1.rKnee);
-  const lEV=Math.abs(lEA-prevA1.lElbow),rEV=Math.abs(rEA-prevA1.rElbow);
-  const angVel=(lKV+rKV)*0.3+(lEV+rEV)*0.7;
-  prevA1={lKnee:lKA,rKnee:rKA,lElbow:lEA,rElbow:rEA};
-  let velScore=angVel>1?Math.min(angVel/0.8,16):0;
-
-  // 발차기
-  const raisedAnkle=Math.min(la.y,ra.y);
-  kickHeight=Math.max(0,hipY-raisedAnkle);
-  let kickBonus=0;
-  if(kickHeight>0.03&&!kickCooldown){
-    maxKickH=Math.max(maxKickH,kickHeight);
-    kickBonus=Math.min(kickHeight/Math.max(hipY-shoulderY,0.01)*5,4);
-    if(!kickDetected){kickDetected=true;kickCooldown=true;setTimeout(()=>{kickDetected=false;kickCooldown=false;},1000);}
-  }else if(kickHeight<0.01)kickDetected=false;
-
-  let power1=Math.min(velScore+kickBonus,20);
-
-  // 자세 (측면 40%)
-  const sTilt1=Math.abs(ls.y-rs.y)/sw;
-  let post1=20-sTilt1*18;post1=Math.max(10,Math.min(20,post1))*0.4;
-
-  // 리듬 (50%)
-  let rhy1=0;
-  if(motionHist1.length>5){
-    const am=motionHist1.reduce((a,b)=>a+b,0)/motionHist1.length;
-    if(am>0.003){const cv=Math.sqrt(motionHist1.reduce((a,b)=>a+Math.pow(b-am,2),0)/motionHist1.length)/am;rhy1=Math.min(am*150,5)+Math.max(0,5-cv*2);}
-  }
-  rhy1=Math.min(rhy1,10)*0.5;
-
-  sc1.stance.push(stance1);sc1.arm.push(arm1);sc1.posture.push(post1);
-  sc1.power.push(power1);sc1.rhythm.push(rhy1);
-  Object.keys(sc1).forEach(k=>{if(sc1[k].length>60)sc1[k].shift();});
-
-  // 합산 스무딩
-  const smUp=0.15,smDown=0.05;
-  function sm(prev,next){return next>prev?prev*(1-smUp)+next*smUp:prev*(1-smDown)+next*smDown;}
-  lastScore.stance=sm(lastScore.stance,av(sc1.stance));
-  lastScore.arm=sm(lastScore.arm,av(sc0.arm)+av(sc1.arm));
-  lastScore.posture=sm(lastScore.posture,av(sc0.posture)+av(sc1.posture));
-  lastScore.power=sm(lastScore.power,av(sc1.power));
-  lastScore.balance=sm(lastScore.balance,av(sc0.balance));
-  lastScore.rhythm=sm(lastScore.rhythm,av(sc0.rhythm)+av(sc1.rhythm));
-  Object.keys(peakScore).forEach(k=>peakScore[k]=Math.max(peakScore[k],lastScore[k]));
-}
-
-// 단일 카메라 모드 (Fold4 없을 때)
-function scoreFrameSingle(lm){
-  if(!lm)return;
-  // 정면만 있을 때는 v3 로직 동일하게
-  scoreFrame0(lm);
-  const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14];
-  const lw=lm[15],rw=lm[16],lh=lm[23],rh=lm[24];
-  const lk=lm[25],rk=lm[26],la=lm[27],ra=lm[28];
-  if(!ls||!rs||ls.visibility<0.3)return;
-  const sw=bodyRef.calibrated?bodyRef.shoulderW:Math.max(d(ls,rs),0.05);
-  const hipY=bodyRef.calibrated?bodyRef.hipY:(lh.y+rh.y)/2;
-  const shoulderY=bodyRef.calibrated?bodyRef.shoulderY:(ls.y+rs.y)/2;
-  const elapsed=scoringStartTime?(Date.now()-scoringStartTime)/1000:0;
-  let motion=0;
-  if(prevLM1){motion=d(lw,prevLM1[15])+d(rw,prevLM1[16]);motionHist1.push(motion);if(motionHist1.length>20)motionHist1.shift();}
-  prevLM1=lm;
-  if(elapsed>10&&motion<0.006){if(!isFrozen){isFrozen=true;frozenAt={...lastScore};dbg('❄️ 동결');}return;}
-  const lKA=a3(lh,lk,la),rKA=a3(rh,rk,ra);
-  const lEA=a3(ls,le,lw),rEA=a3(rs,re,rw);
-  pshH(aH1,'lKnee',lKA);pshH(aH1,'rKnee',rKA);
-  pshH(aH1,'lElbow',lEA);pshH(aH1,'rElbow',rEA);
-  const avgLK=avgH(aH1,'lKnee'),avgRK=avgH(aH1,'rKnee');
-  const frontK=Math.min(avgLK,avgRK),backK=Math.max(avgLK,avgRK);
-  const baseS=Math.min(8,Math.max(2,(180-frontK)/180*8));
-  let fB=frontK>=125&&frontK<=160?6:frontK>=110?4:3;
-  let bB=backK>=155&&backK<=178?4:backK>=145?2:1;
-  sc1.stance.push(Math.min(baseS+fB+bB,20));
-  const extE=Math.max(avgH(aH1,'lElbow'),avgH(aH1,'rElbow'));
-  const retE=Math.min(avgH(aH1,'lElbow'),avgH(aH1,'rElbow'));
+  const bS=Math.min(8,Math.max(2,(180-frontK)/180*8));
+  const fB=frontK>=125&&frontK<=160?6:frontK>=110?4:3;
+  const bB=backK>=155&&backK<=178?4:backK>=145?2:1;
+  const stance=Math.min(bS+fB+bB,20);
   let arm=extE>=170?8:extE>=155?6:extE>=140?4:Math.max(0,extE/140*4);
   if(retE<=60)arm+=4;else if(retE<=80)arm+=3;else if(retE<=100)arm+=2;
-  sc1.arm.push(Math.min(arm,12));
-  const lKV=Math.abs(lKA-prevA1.lKnee),rKV=Math.abs(rKA-prevA1.rKnee);
-  const lEV=Math.abs(lEA-prevA1.lElbow),rEV=Math.abs(rEA-prevA1.rElbow);
+  arm=Math.min(arm,12);
+  const sTilt=Math.abs(ls.y-rs.y)/sw,hTilt=Math.abs(lh.y-rh.y)/sw;
+  const sLean=Math.abs((ls.x+rs.x)/2-(lh.x+rh.x)/2)/sw;
+  let post=20;if(sTilt>0.05)post-=sTilt*18;if(hTilt>0.05)post-=hTilt*14;if(sLean>0.08)post-=sLean*12;
+  post=Math.max(10,Math.min(20,post));
+  const lKV=Math.abs(lKA-PA1.lK),rKV=Math.abs(rKA-PA1.rK);
+  const lEV=Math.abs(lEA-PA1.lE),rEV=Math.abs(rEA-PA1.rE);
   const av1=(lKV+rKV)*0.3+(lEV+rEV)*0.7;
-  prevA1={lKnee:lKA,rKnee:rKA,lElbow:lEA,rElbow:rEA};
-  const raisedAnkle=Math.min(la.y,ra.y);
-  kickHeight=Math.max(0,hipY-raisedAnkle);
-  let kB=kickHeight>0.03?Math.min(kickHeight/Math.max(hipY-shoulderY,0.01)*5,4):0;
-  if(kickHeight>0.03&&!kickCooldown&&!kickDetected){kickDetected=true;kickCooldown=true;setTimeout(()=>{kickDetected=false;kickCooldown=false;},1000);}
-  sc1.power.push(Math.min(av1>1?Math.min(av1/0.8,16):0+kB,20));
-  Object.keys(sc1).forEach(k=>{if(sc1[k].length>60)sc1[k].shift();});
-  const smUp=0.15,smDown=0.05;
-  function sm(prev,next){return next>prev?prev*(1-smUp)+next*smUp:prev*(1-smDown)+next*smDown;}
-  lastScore.stance=sm(lastScore.stance,av(sc1.stance));
-  lastScore.arm=sm(lastScore.arm,av(sc1.arm)+av(sc0.arm));
-  lastScore.posture=sm(lastScore.posture,av(sc0.posture));
-  lastScore.power=sm(lastScore.power,av(sc1.power));
-  lastScore.balance=sm(lastScore.balance,av(sc0.balance));
-  lastScore.rhythm=sm(lastScore.rhythm,av(sc0.rhythm));
-  Object.keys(peakScore).forEach(k=>peakScore[k]=Math.max(peakScore[k],lastScore[k]));
+  PA1={lK:lKA,rK:rKA,lE:lEA,rE:rEA};
+  const rA=Math.min(la.y,ra.y);kickH=Math.max(0,hipY-rA);
+  let kB=0;
+  if(kickH>0.03&&!kickCool){maxKH=Math.max(maxKH,kickH);kB=Math.min(kickH/Math.max(hipY-shY,0.01)*5,4);
+    if(!kickDet){kickDet=true;kickCool=true;setTimeout(()=>{kickDet=false;kickCool=false;},1000);}
+  }else if(kickH<0.01)kickDet=false;
+  const pwr=Math.min(av1>1?Math.min(av1/0.8,16):0+kB,20);
+  const bal=Math.max(5,Math.min(10,10-(sTilt>0.04?sTilt*14:0)-(hTilt>0.04?hTilt*10:0)));
+  let rhy=0;
+  if(MH1.length>6){const am=MH1.reduce((a,b)=>a+b,0)/MH1.length;if(am>0.004){const cv=Math.sqrt(MH1.reduce((a,b)=>a+Math.pow(b-am,2),0)/MH1.length)/am;rhy=Math.min((10-cv*3)*0.6+(am*200)*0.4,10);}}
+  sm2(stance,arm,post,pwr,bal,rhy);
 }
 
-function updateLiveUI(){
-  const sc=isFrozen?frozenAt:lastScore;
-  const kb=Math.min(kiaiCount,5);
-  const total=Math.min(Math.round(sc.stance+sc.arm+sc.posture+sc.power+sc.balance+sc.rhythm)+kb,100);
-  document.getElementById('sStance').textContent=Math.round(sc.stance);
-  document.getElementById('sArm').textContent=Math.round(sc.arm);
-  document.getElementById('sPosture').textContent=Math.round(sc.posture);
-  document.getElementById('sPower').textContent=Math.round(sc.power);
-  document.getElementById('sBalance').textContent=Math.round(sc.balance);
-  document.getElementById('sRhythm').textContent=Math.round(sc.rhythm);
-  document.getElementById('liveTotal').textContent=total;
-  document.getElementById('scoreLabel').textContent=isFrozen?'❄️ 점수 동결 (품새 완료)':'채점 중'+(useRemote?' · 2카메라':'· 1카메라');
+// S25 정면 채점 (2대 모드)
+function score0(lm){
+  const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14],lw=lm[15],rw=lm[16],lh=lm[23],rh=lm[24];
+  if(!ls||!rs||ls.visibility<0.3)return;
+  const sw=BR.ok?BR.sw:Math.max(dst(ls,rs),0.05);
+  const el=(Date.now()-scoringStartTime)/1000;
+  let mot=0;if(PLM0){mot=dst(lw,PLM0[15])+dst(rw,PLM0[16]);MH0.push(mot);if(MH0.length>20)MH0.shift();}
+  PLM0=lm;
+  if(el>10&&mot<0.006){if(!isFrozen){isFrozen=true;frozenAt={...LS};dbg('❄️ 동결');}return;}
+  phA(AH0,'lE',ang(ls,le,lw));phA(AH0,'rE',ang(rs,re,rw));
+  const extE=Math.max(avH(AH0,'lE'),avH(AH0,'rE')),retE=Math.min(avH(AH0,'lE'),avH(AH0,'rE'));
+  let arm0=extE>=170?8:extE>=155?6:extE>=140?4:Math.max(0,extE/140*4);
+  if(retE<=60)arm0+=4;else if(retE<=80)arm0+=3;else if(retE<=100)arm0+=2;
+  arm0=Math.min(arm0,12)*0.4;
+  const sTilt=Math.abs(ls.y-rs.y)/sw,hTilt=Math.abs(lh.y-rh.y)/sw;
+  let bal0=Math.max(5,Math.min(10,10-(sTilt>0.04?sTilt*14:0)-(hTilt>0.04?hTilt*10:0)))*0.7;
+  const sLean=Math.abs((ls.x+rs.x)/2-(lh.x+rh.x)/2)/sw;
+  let post0=20;if(sTilt>0.05)post0-=sTilt*18;if(hTilt>0.05)post0-=hTilt*14;if(sLean>0.08)post0-=sLean*12;
+  post0=Math.max(10,Math.min(20,post0))*0.6;
+  let rhy0=0;if(MH0.length>5){const am=MH0.reduce((a,b)=>a+b,0)/MH0.length;if(am>0.003){const cv=Math.sqrt(MH0.reduce((a,b)=>a+Math.pow(b-am,2),0)/MH0.length)/am;rhy0=Math.min(am*150,5)+Math.max(0,5-cv*2);}}
+  rhy0=Math.min(rhy0,10)*0.5;
+  S0.arm.push(arm0);S0.post.push(post0);S0.bal.push(bal0);S0.rhy.push(rhy0);
+  ['arm','post','bal','rhy'].forEach(k=>{if(S0[k].length>60)S0[k].shift();});
+}
+
+// Fold4 측면 채점 (2대 모드)
+function score1(lm){
+  const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14],lw=lm[15],rw=lm[16],lh=lm[23],rh=lm[24],lk=lm[25],rk=lm[26],la=lm[27],ra=lm[28];
+  if(!ls||!rs||ls.visibility<0.3)return;
+  const sw=BR.ok?BR.sw:Math.max(dst(ls,rs),0.05);
+  const hipY=BR.ok?BR.hipY:(lh.y+rh.y)/2,shY=BR.ok?BR.shY:(ls.y+rs.y)/2;
+  const el=(Date.now()-scoringStartTime)/1000;
+  let mot=0;if(PLM1){mot=dst(lw,PLM1[15])+dst(rw,PLM1[16])+dst(lk,PLM1[25])*0.5;MH1.push(mot);if(MH1.length>20)MH1.shift();}
+  PLM1=lm;
+  if(el>10&&mot<0.006)return;
+  const lKA=ang(lh,lk,la),rKA=ang(rh,rk,ra),lEA=ang(ls,le,lw),rEA=ang(rs,re,rw);
+  phA(AH1,'lK',lKA);phA(AH1,'rK',rKA);phA(AH1,'lE',lEA);phA(AH1,'rE',rEA);
+  const avgLK=avH(AH1,'lK'),avgRK=avH(AH1,'rK');
+  const frontK=Math.min(avgLK,avgRK),backK=Math.max(avgLK,avgRK);
+  const bS=Math.min(8,Math.max(2,(180-frontK)/180*8));
+  const fB=frontK>=125&&frontK<=160?6:frontK>=110?4:3;
+  const bB=backK>=155&&backK<=178?4:backK>=145?2:1;
+  const stance1=Math.min(bS+fB+bB+Math.min(Math.abs(la.x-ra.x)/sw/1.5*2,2),20);
+  const extE1=Math.max(avH(AH1,'lE'),avH(AH1,'rE')),retE1=Math.min(avH(AH1,'lE'),avH(AH1,'rE'));
+  let arm1=extE1>=170?8:extE1>=155?6:extE1>=140?4:Math.max(0,extE1/140*4);
+  if(retE1<=60)arm1+=4;else if(retE1<=80)arm1+=3;else if(retE1<=100)arm1+=2;
+  arm1=Math.min(arm1,12)*0.6;
+  const lKV=Math.abs(lKA-PA1.lK),rKV=Math.abs(rKA-PA1.rK),lEV=Math.abs(lEA-PA1.lE),rEV=Math.abs(rEA-PA1.rE);
+  const av1=(lKV+rKV)*0.3+(lEV+rEV)*0.7;PA1={lK:lKA,rK:rKA,lE:lEA,rE:rEA};
+  kickH=Math.max(0,hipY-Math.min(la.y,ra.y));
+  let kB=0;if(kickH>0.03&&!kickCool){maxKH=Math.max(maxKH,kickH);kB=Math.min(kickH/Math.max(hipY-shY,0.01)*5,4);
+    if(!kickDet){kickDet=true;kickCool=true;setTimeout(()=>{kickDet=false;kickCool=false;},1000);}}
+  else if(kickH<0.01)kickDet=false;
+  const pwr1=Math.min(av1>1?Math.min(av1/0.8,16):0+kB,20);
+  const sTilt1=Math.abs(ls.y-rs.y)/sw;
+  let post1=Math.max(10,Math.min(20,20-sTilt1*18))*0.4;
+  let rhy1=0;if(MH1.length>5){const am=MH1.reduce((a,b)=>a+b,0)/MH1.length;if(am>0.003){const cv=Math.sqrt(MH1.reduce((a,b)=>a+Math.pow(b-am,2),0)/MH1.length)/am;rhy1=Math.min(am*150,5)+Math.max(0,5-cv*2);}}
+  rhy1=Math.min(rhy1,10)*0.5;
+  S1.stance.push(stance1);S1.arm.push(arm1);S1.post.push(post1);S1.pwr.push(pwr1);S1.rhy.push(rhy1);
+  Object.keys(S1).forEach(k=>{if(S1[k].length>60)S1[k].shift();});
+  // 합산
+  sm2(av(S1.stance),av(S0.arm)+av(S1.arm),av(S0.post)+av(S1.post),av(S1.pwr),av(S0.bal),av(S0.rhy)+av(S1.rhy));
+}
+
+function sm2(stance,arm,post,pwr,bal,rhy){
+  const u=0.15,d=0.05;
+  function s(p,n){return n>p?p*(1-u)+n*u:p*(1-d)+n*d;}
+  LS.stance=s(LS.stance,stance);LS.arm=s(LS.arm,arm);LS.post=s(LS.post,post);
+  LS.pwr=s(LS.pwr,pwr);LS.bal=s(LS.bal,bal);LS.rhy=s(LS.rhy,rhy);
+  Object.keys(PK).forEach(k=>{
+    const map={stance:'stance',arm:'arm',post:'post',pwr:'pwr',bal:'bal',rhy:'rhy'};
+    PK[k]=Math.max(PK[k],LS[k]);
+  });
+}
+
+function updateUI(){
+  const sc=isFrozen?frozenAt:LS;
+  const kb=Math.min(KC,5);
+  const total=Math.min(Math.round(sc.stance+sc.arm+sc.post+sc.pwr+sc.bal+sc.rhy)+kb,100);
+  g('sc0').textContent=Math.round(sc.stance);g('sc1').textContent=Math.round(sc.arm);
+  g('sc2').textContent=Math.round(sc.post);g('sc3').textContent=Math.round(sc.pwr);
+  g('sc4').textContent=Math.round(sc.bal);g('sc5').textContent=Math.round(sc.rhy);
+  g('scoreNum').textContent=total;
+  g('scoreLbl').textContent=isFrozen?'❄️ 점수 동결':'채점 중'+(useRemote?' · 2카메라':' · 1카메라');
 }
 
 // ── 컨트롤
-function lockPerson(){
-  isLocked=true;
-  document.getElementById('lockOverlay').style.display='none';
-  document.getElementById('measureBtns').style.display='flex';
-  setPhase(1);
+function doLock(){g('lockOv').style.display='none';g('ctrlBtns').style.display='flex';setPhase(1);}
+function doCalib(){
+  isCalibrating=true;g('calibBtn').style.display='none';
+  let p=0;const iv=setInterval(()=>{p+=100/30;if(p>=100){clearInterval(iv);isCalibrating=false;g('startBtn').style.display='';setPhase(2);dbg('✅ 체형 보정 완료');}},100);
 }
-
-function startCalib(){
-  isCalibrating=true;
-  document.getElementById('calibBtn').style.display='none';
-  // 3초 카운트
-  let prog=0;
-  const iv=setInterval(()=>{
-    prog+=100/30;
-    if(prog>=100){clearInterval(iv);isCalibrating=false;document.getElementById('startBtn').style.display='';setPhase(2);dbg('✅ 체형 보정 완료');}
-  },100);
-}
-
-function startScoring(){
+function doStart(){
   isScoring=true;isFrozen=false;scoringStartTime=Date.now();
-  document.getElementById('startBtn').style.display='none';
-  document.getElementById('stopBtn').style.display='';
-  document.getElementById('freezeBar').style.display='flex';
-  updateFreezeBar();
+  g('startBtn').style.display='none';g('stopBtn').style.display='';
+  g('frzBar').style.display='flex';updateFrz();
 }
-
-function updateFreezeBar(){
+function updateFrz(){
   if(!scoringStartTime||!isScoring)return;
   const e=(Date.now()-scoringStartTime)/1000;
-  document.getElementById('freezeFill').style.width=Math.min(e/10*100,100)+'%';
-  document.getElementById('freezeLbl').textContent=e>=10?'✅ 보호됨':Math.ceil(10-e)+'초';
-  if(e<10&&isScoring)setTimeout(updateFreezeBar,500);
+  g('frzFill').style.width=Math.min(e/10*100,100)+'%';
+  g('frzLbl').textContent=e>=10?'✅ 보호됨':Math.ceil(10-e)+'초';
+  if(e<10&&isScoring)setTimeout(updateFrz,500);
 }
-
-function stopMeasure(){
+function doStop(){
   isRunning=false;isScoring=false;
-  if(document.getElementById('localVideo').srcObject)document.getElementById('localVideo').srcObject.getTracks().forEach(t=>t.stop());
-  if(micStream){micStream.getTracks().forEach(t=>t.stop());}
-  if(audioCtx)try{audioCtx.close();}catch(e){}
-  const sc=isFrozen&&frozenAt?frozenAt:lastScore;
-  const kb=Math.min(kiaiCount,5);
-  const st=Math.max(sc.stance,peakScore.stance*0.9);
-  const ar=Math.max(sc.arm,peakScore.arm*0.9);
-  const po=Math.max(sc.posture,peakScore.posture*0.9);
-  const pw=Math.max(sc.power,peakScore.power*0.9);
-  const ba=Math.max(sc.balance,peakScore.balance*0.9);
-  const rh=Math.max(sc.rhythm,peakScore.rhythm*0.9);
+  if(g('vid0').srcObject)g('vid0').srcObject.getTracks().forEach(t=>t.stop());
+  if(micStr){micStr.getTracks().forEach(t=>t.stop());}
+  if(aCtx)try{aCtx.close();}catch(e){}
+  const sc=isFrozen&&frozenAt?frozenAt:LS;
+  const kb=Math.min(KC,5);
+  const st=Math.max(sc.stance,PK.stance*0.9),ar=Math.max(sc.arm,PK.arm*0.9);
+  const po=Math.max(sc.post,PK.post*0.9),pw=Math.max(sc.pwr,PK.pwr*0.9);
+  const ba=Math.max(sc.bal,PK.bal*0.9),rh=Math.max(sc.rhy,PK.rhy*0.9);
   const total=Math.min(Math.round(st+ar+po+pw+ba+rh)+kb,100);
-  aiScoreData={stance:Math.round(st),arm:Math.round(ar),posture:Math.round(po),power:Math.round(pw),balance:Math.round(ba),rhythm:Math.round(rh),kiai:kb,total};
-  adjustments={stance:0,arm:0,posture:0,power:0,balance:0,rhythm:0};
-  judgeScores={j0:0,j1:0,j2:0,j3:0};
-  document.getElementById('adjName').textContent=currentName+' 선수';
-  document.getElementById('adjAI').textContent=total;
-  document.getElementById('adjSub').textContent=`AI ${total}점 | ${useRemote?'2카메라':'1카메라'} | 기합 ${kiaiCount}회(+${kb}점) | 최고발차기${(maxKickH*100).toFixed(0)}%`;
-  buildAdjustList();buildJudgeItems();updateFinalSummary();
-  showScreen('s4');
+  aiData={stance:Math.round(st),arm:Math.round(ar),post:Math.round(po),pwr:Math.round(pw),bal:Math.round(ba),rhy:Math.round(rh),kiai:kb,total};
+  ADJ={stance:0,arm:0,post:0,pwr:0,bal:0,rhy:0};JS={j0:0,j1:0,j2:0,j3:0};
+  g('adjName').textContent=currentName+' 선수';
+  g('adjScore').textContent=total;
+  g('adjSub').textContent=`AI ${total}점 | ${useRemote?'2카메라':'1카메라'} | 기합 ${KC}회 | 최고발차기 ${(maxKH*100).toFixed(0)}%`;
+  buildAdj();buildJi();updateFin();show('s4');
 }
 
-// ── 기합
+// 기합
 function startKiai(){
-  if(!analyser)return;
-  const buf=new Uint8Array(analyser.frequencyBinCount);
+  if(!anl)return;
+  const buf=new Uint8Array(anl.frequencyBinCount);
   const det=()=>{
     if(!isRunning)return;
-    analyser.getByteFrequencyData(buf);
+    anl.getByteFrequencyData(buf);
     const vol=buf.reduce((a,b)=>a+b,0)/buf.length;
-    document.getElementById('kiaiFill').style.width=Math.min(vol/80*100,100)+'%';
-    kiaiVolHist.push(vol);if(kiaiVolHist.length>5)kiaiVolHist.shift();
-    if(vol>45&&!kiaiCooldown&&kiaiVolHist.length>=3&&isScoring){
-      const prev=kiaiVolHist.slice(0,-1).reduce((a,b)=>a+b,0)/(kiaiVolHist.length-1);
-      if(vol>prev*1.7){kiaiCount=Math.min(kiaiCount+1,5);updateKiaiUI();kiaiCooldown=true;setTimeout(()=>kiaiCooldown=false,1500);}
+    g('kiaiFill').style.width=Math.min(vol/80*100,100)+'%';
+    kVH.push(vol);if(kVH.length>5)kVH.shift();
+    if(vol>45&&!kCool&&kVH.length>=3&&isScoring){
+      const prev=kVH.slice(0,-1).reduce((a,b)=>a+b,0)/(kVH.length-1);
+      if(vol>prev*1.7){KC=Math.min(KC+1,5);updateKiaiUI();kCool=true;setTimeout(()=>kCool=false,1500);}
     }
     requestAnimationFrame(det);
   };det();
 }
-function updateKiaiUI(){document.getElementById('kiaiCnt').textContent=kiaiCount+'회';}
+function updateKiaiUI(){g('kiaiCnt').textContent=KC+'회';}
 
-// ── 조정
-function buildAdjustList(){
-  const list=document.getElementById('adjustList');list.innerHTML='';
+// 조정
+function buildAdj(){
+  const list=g('adjList');list.innerHTML='';
   ITEMS.forEach(item=>{
-    const ai=aiScoreData[item.key];
-    const div=document.createElement('div');div.className='adjust-item';
-    div.innerHTML=`<button class="adj-btn adj-minus" onclick="adjust('${item.key}',-1)">−</button>
-      <div class="adj-item-label"><span class="adj-item-name">${item.label}</span><span class="adj-item-ai">AI: ${ai} / ${item.max}점</span></div>
-      <span class="adj-val" id="av_${item.key}">${ai}</span>
-      <button class="adj-btn adj-plus" onclick="adjust('${item.key}',+1)">+</button>`;
+    const ai=aiData[item.k];
+    const div=document.createElement('div');div.className='adj-item';
+    div.innerHTML=`<button class="xbtn xbtn-m" onclick="doAdj('${item.k}',-1)">−</button>
+      <div class="adj-item-lbl"><span class="adj-item-name">${item.lbl}</span><span class="adj-item-ai">AI: ${ai} / ${item.max}점</span></div>
+      <span class="adj-val" id="av_${item.k}">${ai}</span>
+      <button class="xbtn xbtn-p" onclick="doAdj('${item.k}',+1)">+</button>`;
     list.appendChild(div);
   });
 }
-
-function adjust(key,delta){
-  adjustments[key]=(adjustments[key]||0)+delta;
-  const item=ITEMS.find(i=>i.key===key);
-  const cur=Math.max(0,Math.min(item.max+5,aiScoreData[key]+adjustments[key]));
-  document.getElementById('av_'+key).textContent=cur;
-  updateFinalSummary();
+function doAdj(k,d){
+  ADJ[k]=(ADJ[k]||0)+d;
+  const item=ITEMS.find(i=>i.k===k);
+  const cur=Math.max(0,Math.min(item.max+5,aiData[k]+ADJ[k]));
+  g('av_'+k).textContent=cur;updateFin();
 }
-
-function buildJudgeItems(){
-  const wrap=document.getElementById('judgeItems');wrap.innerHTML='';
-  JUDGE_ITEMS.forEach(item=>{
-    const val=judgeScores[item.id];
-    const div=document.createElement('div');div.className='judge-item';
-    div.innerHTML=`<button class="jbtn jbtn-m" onclick="tapJudge('${item.id}',-1)">−</button>
-      <div class="judge-label-w"><span class="judge-name-t">${item.name}</span><span class="judge-pts-t">${item.ml} | ${item.pl}</span></div>
-      <span class="jval ${val>0?'pos':val<0?'neg':'zero'}" id="${item.id}_val">${val>=0?'+':''}${val}</span>
-      <button class="jbtn jbtn-p" onclick="tapJudge('${item.id}',+1)">+</button>`;
+function buildJi(){
+  const wrap=g('jiList');wrap.innerHTML='';
+  JITEMS.forEach(item=>{
+    const val=JS[item.id];
+    const div=document.createElement('div');div.className='ji';
+    div.innerHTML=`<button class="xbtn xbtn-m" onclick="doJI('${item.id}',-1)">−</button>
+      <div class="ji-lbl"><span class="ji-name">${item.name}</span><span class="ji-pts">${item.ml} | ${item.pl}</span></div>
+      <span class="jv ${val>0?'pos':val<0?'neg':'zero'}" id="${item.id}_v">${val>=0?'+':''}${val}</span>
+      <button class="xbtn xbtn-p" onclick="doJI('${item.id}',+1)">+</button>`;
     wrap.appendChild(div);
   });
 }
-
-function tapJudge(id,dir){
-  const item=JUDGE_ITEMS.find(i=>i.id===id);
-  judgeScores[id]+=(dir>0?item.plus:item.minus);
-  judgeScores[id]=Math.max(item.minus*3,Math.min(item.plus*3,judgeScores[id]));
-  const val=judgeScores[id];
-  const el=document.getElementById(id+'_val');
-  el.textContent=(val>=0?'+':'')+val;
-  el.className='jval '+(val>0?'pos':val<0?'neg':'zero');
-  updateFinalSummary();
+function doJI(id,dir){
+  const item=JITEMS.find(i=>i.id===id);
+  JS[id]+=(dir>0?item.p:item.m);
+  JS[id]=Math.max(item.m*3,Math.min(item.p*3,JS[id]));
+  const val=JS[id];
+  const el=g(id+'_v');el.textContent=(val>=0?'+':'')+val;
+  el.className='jv '+(val>0?'pos':val<0?'neg':'zero');updateFin();
 }
-
-function updateFinalSummary(){
-  const aiT=aiScoreData.total;
-  const adjT=Object.values(adjustments).reduce((s,v)=>s+v,0);
-  const judgeT=Object.values(judgeScores).reduce((s,v)=>s+v,0);
-  const final=Math.max(0,Math.min(100,aiT+adjT+judgeT));
-  document.getElementById('sumAI').textContent=aiT;
-  document.getElementById('sumAdj').textContent=(adjT>=0?'+':'')+adjT;
-  document.getElementById('sumAdj').style.color=adjT>=0?'#4ade80':'#f87171';
-  document.getElementById('sumJudge').textContent=(judgeT>=0?'+':'')+judgeT;
-  document.getElementById('sumJudge').style.color=judgeT>=0?'#4ade80':'#f87171';
-  document.getElementById('sumFinal').textContent=final;
+function updateFin(){
+  const aiT=aiData.total;
+  const adjT=Object.values(ADJ).reduce((s,v)=>s+v,0);
+  const jiT=Object.values(JS).reduce((s,v)=>s+v,0);
+  const final=Math.max(0,Math.min(100,aiT+adjT+jiT));
+  g('finAI').textContent=aiT;
+  g('finAdj').textContent=(adjT>=0?'+':'')+adjT;
+  g('finAdj').style.color=adjT>=0?'#4ade80':'#f87171';
+  g('finJudge').textContent=(jiT>=0?'+':'')+jiT;
+  g('finJudge').style.color=jiT>=0?'#4ade80':'#f87171';
+  g('finTotal').textContent=final;
 }
-
-function confirmScore(){
-  const adjT=Object.values(adjustments).reduce((s,v)=>s+v,0);
-  const judgeT=Object.values(judgeScores).reduce((s,v)=>s+v,0);
-  const final=Math.max(0,Math.min(100,aiScoreData.total+adjT+judgeT));
-  players.push({name:currentName,final,ai:aiScoreData.total,adj:adjT,judge:judgeT,kiai:kiaiCount,dual:useRemote,detail:{...aiScoreData}});
-  document.getElementById('showRankBtn').style.display='';
-  document.getElementById('nameInput').value='';
-  renderRank();showScreen('s5');
+function doConfirm(){
+  const adjT=Object.values(ADJ).reduce((s,v)=>s+v,0);
+  const jiT=Object.values(JS).reduce((s,v)=>s+v,0);
+  const final=Math.max(0,Math.min(100,aiData.total+adjT+jiT));
+  players.push({name:currentName,final,ai:aiData.total,adj:adjT,judge:jiT,kiai:KC,dual:useRemote,d:{...aiData}});
+  g('rankBtn').style.display='';g('nameInput').value='';renderRank();show('s5');
 }
-
-function remeasure(){document.getElementById('nameInput').value=currentName;showScreen('s1');}
-
+function doRemeasure(){g('nameInput').value=currentName;show('s1');}
 function renderRank(){
   const sorted=[...players].sort((a,b)=>b.final-a.final);
   const medals=['🥇','🥈','🥉','④','⑤','⑥','⑦','⑧','⑨','⑩'];
   const cls=['r1','r2','r3','','','','','','',''];
-  const list=document.getElementById('rankList');list.innerHTML='';
+  const list=g('rankList');list.innerHTML='';
   sorted.forEach((p,i)=>{
-    const div=document.createElement('div');div.className='rank-item '+(cls[i]||'');
-    div.innerHTML=`<div class="rank-medal">${medals[i]||i+1}</div>
-      <div class="rank-info"><div class="rank-name">${p.name}</div>
-      <div class="rank-detail">AI ${p.ai} ${p.adj>=0?'+':''}${p.adj}조정 ${p.judge>=0?'+':''}${p.judge}심판 | 기합${p.kiai}회 | ${p.dual?'2카메라':'1카메라'}<br>
-      서기${p.detail.stance} 손기술${p.detail.arm} 자세${p.detail.posture} 절도${p.detail.power} 균형${p.detail.balance} 리듬${p.detail.rhythm}</div></div>
-      <div class="rank-score">${p.final}</div>`;
+    const div=document.createElement('div');div.className='ri '+(cls[i]||'');
+    div.innerHTML=`<div class="ri-medal">${medals[i]||i+1}</div>
+      <div class="ri-info"><div class="ri-name">${p.name}</div>
+      <div class="ri-detail">AI ${p.ai} ${p.adj>=0?'+':''}${p.adj} 조정 ${p.judge>=0?'+':''}${p.judge} 심판 | 기합${p.kiai}회 | ${p.dual?'2카메라':'1카메라'}<br>
+      서기${p.d.stance} 손기술${p.d.arm} 자세${p.d.post} 절도${p.d.pwr} 균형${p.d.bal} 리듬${p.d.rhy}</div></div>
+      <div class="ri-score">${p.final}</div>`;
     list.appendChild(div);
   });
 }
+function goRank(){renderRank();show('s5');}
+function goS1(){show('s1');}
+function doReset(){players=[];g('rankBtn').style.display='none';show('s1');}
 
-function goRank(){renderRank();showScreen('s5');}
-function goInput(){showScreen('s1');}
-function resetAll(){players=[];document.getElementById('showRankBtn').style.display='none';showScreen('s1');}
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-function setPhase(n){['ph0','ph1','ph2'].forEach((id,i)=>{document.getElementById(id).className='phase-step'+(i<n?'done':i===n?'active':'');});}
-function d(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
-function mid(a,b){return{x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
-function a3(a,b,c){
+// 유틸
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));g(id).classList.add('active');}
+function setPhase(n){['ph0','ph1','ph2'].forEach((id,i)=>g(id).className='ph'+(i<n?' done':i===n?' active':''));}
+function g(id){return document.getElementById(id);}
+function dbg(t){g('dbg').textContent=t;}
+function d2(t){g('dbg2').textContent=t;}
+function dst(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
+function ang(a,b,c){
   if(!a||!b||!c)return 135;
   if((a.visibility||1)<0.2||(b.visibility||1)<0.2||(c.visibility||1)<0.2)return 135;
   const ab={x:a.x-b.x,y:a.y-b.y},cb={x:c.x-b.x,y:c.y-b.y};
@@ -897,14 +730,20 @@ function a3(a,b,c){
   const mag=Math.sqrt((ab.x**2+ab.y**2)*(cb.x**2+cb.y**2));
   return mag===0?135:Math.acos(Math.max(-1,Math.min(1,dot/mag)))*180/Math.PI;
 }
-function pshH(obj,k,v){if(!obj[k])obj[k]=[];obj[k].push(v);if(obj[k].length>HIST)obj[k].shift();}
-function avgH(obj,k){return obj[k]&&obj[k].length?obj[k].reduce((a,b)=>a+b,0)/obj[k].length:135;}
+function phA(obj,k,v){if(!obj[k])obj[k]=[];obj[k].push(v);if(obj[k].length>HL)obj[k].shift();}
+function avH(obj,k){return obj[k]&&obj[k].length?obj[k].reduce((a,b)=>a+b,0)/obj[k].length:135;}
 function av(arr){return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;}
-function dbg(t){document.getElementById('dbg').textContent=t;}
 async function waitLibs(){
-  return new Promise(res=>{const s=Date.now();const t=setInterval(()=>{if(window.Pose&&window.drawConnectors){clearInterval(t);res();}else if(Date.now()-s>25000){clearInterval(t);res();}},300);});
+  return new Promise(res=>{
+    const s=Date.now();
+    const t=setInterval(()=>{
+      if(window.Pose&&window.drawConnectors){clearInterval(t);res();}
+      else if(Date.now()-s>25000){clearInterval(t);res();}
+    },300);
+  });
 }
-(async()=>{await waitLibs();if(window.Pose)await initPose();else dbg('⚠️ 라이브러리 로드 실패');})();
+// 앱 시작
+dbg('준비 완료 — 이름 입력 후 시작하세요');
 </script>
 </body>
 </html>
