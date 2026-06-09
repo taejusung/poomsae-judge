@@ -110,33 +110,29 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
 <div class="wrap">
   <div class="title">🥋 품새 AI 심판</div>
 
-  <!-- S1: 이름 입력 -->
+  <!-- S1: 이름 입력 + 방번호 -->
   <div class="screen active" id="s1">
-    <div class="card">
-      <div class="card-title">선수 이름</div>
-      <input class="name-input" id="nameInput" type="text" placeholder="이름 입력" maxlength="10" onkeydown="if(event.key==='Enter')goS2()">
-      <button class="btn btn-primary" onclick="goS2()">다음 →</button>
-    </div>
-    <button class="btn btn-gold" id="rankBtn" style="display:none" onclick="goRank()">🏆 전체 순위 보기</button>
-    <div class="dbg" id="dbg">준비 중...</div>
-  </div>
-
-  <!-- S2: 방 번호 / 연결 -->
-  <div class="screen" id="s2">
+    <!-- 방번호: 페이지 열자마자 바로 표시 -->
     <div class="room-box">
-      <div class="room-label">📱 Fold4에서 입력할 방 번호</div>
+      <div class="room-label">📱 Fold4 보조카메라 방 번호</div>
       <div class="room-code" id="roomCode">----</div>
-      <div class="room-sub">judge_cam.html 열고 이 번호 입력하세요</div>
+      <div class="room-sub">judge_cam.html 열고 이 번호 입력</div>
     </div>
     <div class="conn-row">
       <div class="dot w" id="connDot"></div>
       <div class="conn-txt" id="connTxt">Fold4 연결 대기 중...</div>
     </div>
-    <!-- Fold4 연결되면 이 버튼 표시 -->
-    <button class="btn btn-primary" id="btn2cam" style="display:none" onclick="startWith2()">🎥 2대 카메라로 시작</button>
-    <button class="btn btn-secondary" onclick="startWith1()">📱 Fold4 없이 1대로 시작</button>
-    <div class="dbg" id="dbg2">방 번호 생성 중...</div>
+    <div class="card">
+      <div class="card-title">선수 이름</div>
+      <input class="name-input" id="nameInput" type="text" placeholder="이름 입력 후 시작" maxlength="10" onkeydown="if(event.key==='Enter')startMeasure()">
+      <button class="btn btn-primary" id="btn2cam" onclick="startWith2()" style="display:none">🎥 2대 카메라로 시작</button>
+      <button class="btn btn-primary" id="btn1cam" onclick="startWith1()">📱 1대 카메라로 시작</button>
+    </div>
+    <button class="btn btn-gold" id="rankBtn" style="display:none" onclick="goRank()">🏆 전체 순위 보기</button>
+    <div class="dbg" id="dbg">방 번호 생성 중...</div>
   </div>
+
+
 
   <!-- S3: 측정 -->
   <div class="screen" id="s3">
@@ -293,23 +289,26 @@ const JITEMS=[
   {id:'j3',name:'동작',m:-5,p:+5,ml:'동작 틀림 -5',pl:'동작 완벽 +5'},
 ];
 
-// ── S1 → S2: 방 번호 생성
-function goS2(){
+// ── 방 번호 페이지 로드 즉시 생성
+function initRoomCode(){
+  roomCode=String(Math.floor(1000+Math.random()*9000));
+  g('roomCode').textContent=roomCode;
+  dbg('방 번호: '+roomCode+' | Fold4 연결 대기 중...');
+  setTimeout(initPeer, 200);
+}
+
+function startMeasure(){
   const name=g('nameInput').value.trim();
   if(!name){alert('이름을 입력해주세요!');return;}
   currentName=name;
-  // 방 번호 즉시 생성
-  roomCode=String(Math.floor(1000+Math.random()*9000));
-  g('roomCode').textContent=roomCode;
-  show('s2');
-  // PeerJS는 별도로 비동기 초기화 (실패해도 방 번호 표시에 영향 없음)
-  setTimeout(initPeer, 100);
+  useRemote=false;
+  startCamera();
 }
 
 function initPeer(){
   try{
     if(typeof Peer==='undefined'){
-      d2('⚠️ PeerJS 로드 안됨 — 1대로만 사용 가능');
+      dbg('⚠️ PeerJS 로드 안됨 — 1대로만 사용 가능');
       return;
     }
     if(peer){try{peer.destroy();}catch(e){}}
@@ -317,7 +316,7 @@ function initPeer(){
       host:'0.peerjs.com',port:443,path:'/',secure:true,
       config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}
     });
-    peer.on('open',()=>d2('✅ 방 번호 활성화! Fold4에서 '+roomCode+' 입력'));
+    peer.on('open',()=>dbg('✅ 방 번호 활성화! Fold4에서 '+roomCode+' 입력'));
     peer.on('call',(call)=>{
       call.answer();
       call.on('stream',(stream)=>{
@@ -327,7 +326,8 @@ function initPeer(){
         g('connDot').className='dot ok';
         g('connTxt').textContent='✅ Fold4 연결됨!';
         g('btn2cam').style.display='';
-        d2('✅ Fold4 영상 수신 중');
+        g('btn1cam').style.display='none';
+        dbg('✅ Fold4 연결됨! 2대 카메라로 시작하세요');
       });
     });
     peer.on('error',(e)=>{
@@ -336,14 +336,23 @@ function initPeer(){
         g('roomCode').textContent=roomCode;
         setTimeout(initPeer,800);
       } else {
-        d2('PeerJS 오류('+e.type+') — 1대로 시작하세요');
+        dbg('PeerJS 오류('+e.type+') — 1대로 시작하세요');
       }
     });
-  }catch(e){d2('PeerJS 실패: '+e.message);}
+  }catch(e){dbg('PeerJS 실패: '+e.message);}
 }
 
-function startWith2(){useRemote=true;startCamera();}
-function startWith1(){useRemote=false;if(peer)try{peer.destroy();}catch(e){}startCamera();}
+function startWith2(){
+  const name=g('nameInput').value.trim();
+  if(!name){alert('이름을 입력해주세요!');return;}
+  currentName=name;useRemote=true;startCamera();
+}
+function startWith1(){
+  const name=g('nameInput').value.trim();
+  if(!name){alert('이름을 입력해주세요!');return;}
+  currentName=name;useRemote=false;
+  if(peer)try{peer.destroy();}catch(e){}startCamera();
+}
 
 // ── 카메라 시작
 async function startCamera(){
@@ -712,7 +721,7 @@ function renderRank(){
   });
 }
 function goRank(){renderRank();show('s5');}
-function goS1(){show('s1');}
+function goS1(){show('s1');g('nameInput').value='';}
 function doReset(){players=[];g('rankBtn').style.display='none';show('s1');}
 
 // 유틸
@@ -742,8 +751,8 @@ async function waitLibs(){
     },300);
   });
 }
-// 앱 시작
-dbg('준비 완료 — 이름 입력 후 시작하세요');
+// 앱 시작: 방 번호 즉시 생성
+initRoomCode();
 </script>
 </body>
 </html>
