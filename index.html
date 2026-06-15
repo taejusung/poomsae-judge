@@ -335,7 +335,8 @@ async function startMeasure(){
   ['sStance','sArm','sPosture','sPower','sBalance','sRhythm'].forEach(id=>document.getElementById(id).textContent='-');
   kiaiCount=0;maxKickHeight=0;updateKiaiUI();
   isFrozen=false;scoringStartTime=null;
-  sA={stance:[],arm:[],posture:[],power:[],balance:[],rhythm:[]};
+  techHistory=[];techPhase='idle';techPeakVel=0;techBestAngles=null;techBestQ=0;
+  velBuf=[];
   lastScore={stance:0,arm:0,posture:14,power:0,balance:8,rhythm:0};
   peakScore={stance:0,arm:0,posture:0,power:0,balance:0,rhythm:0};
   prevLM=null;motionHist=[];frameSince=0;
@@ -506,30 +507,30 @@ function scoreLM(lm){
   const ls=lm[11],rs=lm[12],le=lm[13],re=lm[14];
   const lw=lm[15],rw=lm[16],lh=lm[23],rh=lm[24];
   const lk=lm[25],rk=lm[26],la=lm[27],ra=lm[28];
-  if(!ls||!rs||ls.visibility<0.3)return;
+  if(!ls||!rs||ls.visibility<0.35)return;
 
   const sw=bodyRef.calibrated?bodyRef.shoulderW:Math.max(d(ls,rs),0.05);
   const hipY=bodyRef.calibrated?bodyRef.hipY:(lh.y+rh.y)/2;
-  const shoulderY=bodyRef.calibrated?bodyRef.shoulderY:(ls.y+rs.y)/2;
+  const shY=bodyRef.calibrated?bodyRef.shoulderY:(ls.y+rs.y)/2;
 
-  // 움직임 측정
+  // ── 움직임 측정
   let motion=0;
   if(prevLM){
     motion=d(lw,prevLM[15])+d(rw,prevLM[16])+d(lk,prevLM[25])*0.5+d(rk,prevLM[26])*0.5;
     motionHist.push(motion);if(motionHist.length>30)motionHist.shift();
-    if(motion>0.006)frameSince=0;else frameSince++;
+    if(motion>0.005)frameSince=0;else frameSince++;
   }
   prevLM=lm;
 
-  // 10초 후 정지 시 점수 동결
+  // ── 10초 보호 + 동결
   const elapsed=scoringStartTime?(Date.now()-scoringStartTime)/1000:0;
-  if(elapsed>10&&frameSince>=20){
+  if(elapsed>10&&frameSince>=18){
     if(!isFrozen){isFrozen=true;frozenAt={...lastScore};dbg('❄️ 점수 동결!');}
     return;
   }
-  if(elapsed<=10&&frameSince>=20){dbg('대기중 (10초 보호 전)');return;}
+  if(elapsed<=10&&frameSince>=18){dbg('⏱ 대기 (10초 보호)');return;}
 
-  // 각도 계산
+  // ── 관절 각도 (15프레임 이력 평균)
   const lKA=a3(lh,lk,la),rKA=a3(rh,rk,ra);
   const lEA=a3(ls,le,lw),rEA=a3(rs,re,rw);
   pushH('lKnee',lKA);pushH('rKnee',rKA);
@@ -537,117 +538,109 @@ function scoreLM(lm){
   const avgLK=avgH('lKnee'),avgRK=avgH('rKnee');
   const avgLE=avgH('lElbow'),avgRE=avgH('rElbow');
 
-  // ① 서기 (20점)
-  // 가만히 서있기: ~8점 / 평균 앞굽이: ~13점 / 잘된 앞굽이: ~17~19점 / 완벽: 20점
-  const frontK=Math.min(avgLK,avgRK),backK=Math.max(avgLK,avgRK);
-  // 기본: 무릎이 굽혀진 정도로 시작 (180도=완전 펴짐=4점, 90도=완전굽힘=8점)
-  const baseStance=Math.min(8,Math.max(2,(180-frontK)/180*8));
-  // 앞굽이 판정 (125~160도): +6점
-  let frontBonus=0;
-  if(frontK>=125&&frontK<=160)frontBonus=6;
-  else if(frontK>=110&&frontK<125)frontBonus=4;
-  else if(frontK>160&&frontK<=175)frontBonus=3;
-  // 뒷발 (155~178도): +4점 / 무릎 완전히 펴진 경우
-  let backBonus=0;
-  if(backK>=155&&backK<=178)backBonus=4;
-  else if(backK>=145&&backK<155)backBonus=2;
-  else if(backK>178)backBonus=1;
-  // 서기 가산 (앞굽이 폭 - 발 간격이 넓을수록)
-  const footGap=Math.abs(la.x-ra.x)/sw;
-  const widthBonus=Math.min(footGap/1.5*2,2);
-  let stanceScore=Math.min(baseStance+frontBonus+backBonus+widthBonus,20);
+  // ── 각속도 (5프레임 스무딩)
+  const lKV=Math.abs(lKA-prevAng.lKnee),rKV=Math.abs(rKA-prevAng.rKnee);
+  const lEV=Math.abs(lEA-prevAng.lElbow),rEV=Math.abs(rEA-prevAng.rElbow);
+  const rawVel=(lEV+rEV)*0.7+(lKV+rKV)*0.3;
+  prevAng={lKnee:lKA,rKnee:rKA,lElbow:lEA,rElbow:rEA};
+  velBuf.push(rawVel);if(velBuf.length>5)velBuf.shift();
+  const smVel=velBuf.reduce((a,b)=>a+b,0)/velBuf.length;
 
-  // ② 손기술 (20점)
-  // 가만히: ~6점 / 평균 동작: ~12점 / 잘된 동작: ~16~18점 / 완벽: 20점
-  const extE=Math.max(avgLE,avgRE),retE=Math.min(avgLE,avgRE);
-  // 기본: 팔이 어느정도 펴진 상태
-  const baseArm=Math.min(6,Math.max(1,extE/180*6));
-  // 완전 뻗기 (160~180도): +8점
-  let extBonus=0;
-  if(extE>=170)extBonus=8;
-  else if(extE>=155)extBonus=6;
-  else if(extE>=140)extBonus=4;
-  else if(extE>=120)extBonus=2;
-  // 반대 팔 당기기 (<90도): +4점
-  let retBonus=0;
-  if(retE<=60)retBonus=4;
-  else if(retE<=80)retBonus=3;
-  else if(retE<=100)retBonus=2;
-  else if(retE<=120)retBonus=1;
-  // 손목 높이 (어깨와 비슷한 높이): +2점
-  const wristH=Math.abs((lw.y+rw.y)/2-(ls.y+rs.y)/2)/sw;
-  const wristBonus=wristH<0.2?2:wristH<0.4?1:0;
-  let armScore=Math.min(baseArm+extBonus+retBonus+wristBonus,20);
+  // ── 기술 상태 머신 (핵심 개선)
+  // idle → (smVel>3.5) → moving → (smVel<1.5 after peak) → settling → score → idle
+  const V_START=3.5, V_END=1.5;
+  if(techPhase==='idle'&&smVel>V_START){
+    techPhase='moving';
+    techPeakVel=smVel;
+    techBestAngles=null;techBestQ=0;
+  }
+  if(techPhase==='moving'){
+    techPeakVel=Math.max(techPeakVel,smVel);
+    // 기술 중 최고 자세 포착 (각도가 가장 좋은 순간)
+    const q=evalQ(avgLK,avgRK,avgLE,avgRE);
+    if(q>techBestQ){
+      techBestQ=q;
+      techBestAngles={lK:avgLK,rK:avgRK,lE:avgLE,rE:avgRE};
+    }
+    if(smVel<V_END&&techPeakVel>V_START){
+      techPhase='settling';
+    }
+  }
+  if(techPhase==='settling'){
+    if(smVel<0.8){
+      // 기술 완료 → 채점
+      if(techPeakVel>4&&techBestAngles){
+        const ts=scoreTech(techBestAngles,techPeakVel,lm,hipY,shY,sw);
+        techHistory.push(ts);
+        if(techHistory.length>TECH_MAX)techHistory.shift();
+        dbg('✅ 기술완료 v='+techPeakVel.toFixed(1)+' 서기:'+ts.stance+' 손:'+ts.arm+' 절도:'+ts.power);
+      }
+      techPhase='idle';techPeakVel=0;techBestAngles=null;techBestQ=0;
+    }
+  }
 
-  // ③ 자세 (20점)
-  // 가만히 서있기: ~14점 / 평균: ~16점 / 잘된 자세: ~18~19점 / 완벽: 20점
+  // ── 발차기 감지
+  const ankleY=Math.min(la.y,ra.y);
+  kickHeight=Math.max(0,hipY-ankleY);
+  let kickBonus=0;
+  if(kickHeight>0.04&&!kickCooldown){
+    maxKickHeight=Math.max(maxKickHeight,kickHeight);
+    const kr=kickHeight/Math.max(hipY-shY,0.01);
+    kickBonus=kr>=1.0?5:kr>=0.7?4:kr>=0.4?3:kr>=0.2?2:1;
+    if(!kickDetected){
+      kickDetected=true;kickCooldown=true;
+      showBadge('kickBadge');
+      // 발차기를 기술 이력에 추가
+      techHistory.push({stance:Math.max(lastScore.stance,10),arm:Math.max(lastScore.arm,10),power:Math.min(lastScore.power+kickBonus,20)});
+      if(techHistory.length>TECH_MAX)techHistory.shift();
+      setTimeout(()=>{kickDetected=false;kickCooldown=false;},1000);
+    }
+  }else if(kickHeight<0.015)kickDetected=false;
+
+  // ── 기술 이력 가중 평균 (최근일수록 높은 가중치)
+  let stanceScore=0,armScore=0,powerScore=0;
+  if(techHistory.length>0){
+    let wS=0,wA=0,wP=0,wT=0;
+    techHistory.forEach((ts,i)=>{
+      const w=Math.pow(0.92,techHistory.length-1-i); // 지수 감쇠
+      wT+=w;wS+=ts.stance*w;wA+=ts.arm*w;wP+=ts.power*w;
+    });
+    stanceScore=wS/wT;armScore=wA/wT;powerScore=wP/wT;
+  }
+
+  // ── 자세 (매 프레임 채점)
   const sTilt=Math.abs(ls.y-rs.y)/sw;
   const hTilt=Math.abs(lh.y-rh.y)/sw;
   const sLean=Math.abs((ls.x+rs.x)/2-(lh.x+rh.x)/2)/sw;
   const headD=lm[0]?Math.abs(lm[0].x-(ls.x+rs.x)/2)/sw:0;
-  // 20점에서 오차만큼 감점
   let postureScore=20;
-  if(sTilt>0.05)postureScore-=sTilt*18;
-  if(hTilt>0.05)postureScore-=hTilt*14;
-  if(sLean>0.08)postureScore-=sLean*12;
-  if(headD>0.1)postureScore-=headD*8;
-  postureScore=Math.max(10,Math.min(20,postureScore));
+  if(sTilt>0.04)postureScore-=sTilt*15;
+  if(hTilt>0.04)postureScore-=hTilt*12;
+  if(sLean>0.07)postureScore-=sLean*10;
+  if(headD>0.1)postureScore-=headD*6;
+  postureScore=Math.max(11,Math.min(20,postureScore));
 
-  // ④ 절도+발차기 (20점)
-  // 가만히: 0점 / 보통 동작: ~10점 / 빠르고 강한 동작: ~15~17점 / 완벽+발차기: 20점
-  const lKV=Math.abs(lKA-prevAng.lKnee),rKV=Math.abs(rKA-prevAng.rKnee);
-  const lEV=Math.abs(lEA-prevAng.lElbow),rEV=Math.abs(rEA-prevAng.rElbow);
-  const angVel=(lKV+rKV)*0.3+(lEV+rEV)*0.7;
-  prevAng={lKnee:lKA,rKnee:rKA,lElbow:lEA,rElbow:rEA};
-
-  // 각속도 → 절도 점수 (0에서 시작)
-  let velScore=0;
-  if(angVel>1)velScore=Math.min(angVel/0.8,16); // 빠를수록 높은 점수
-  velScore=Math.min(velScore,16);
-
-  // 발차기 높이
-  const raisedAnkle=Math.min(la.y,ra.y);
-  kickHeight=Math.max(0,hipY-raisedAnkle);
-  let kickBonus=0;
-  if(kickHeight>0.03&&!kickCooldown){
-    maxKickHeight=Math.max(maxKickHeight,kickHeight);
-    const kickRatio=kickHeight/Math.max(hipY-shoulderY,0.01);
-    // 허리: +1 / 명치: +3 / 어깨 이상: +4
-    kickBonus=Math.min(kickRatio*5,4);
-    if(!kickDetected){
-      kickDetected=true;kickCooldown=true;
-      showBadge('kickBadge');
-      setTimeout(()=>{kickDetected=false;kickCooldown=false;},1000);
-    }
-  }else if(kickHeight<0.01)kickDetected=false;
-
-  let powerScore=Math.min(velScore+kickBonus,20);
-
-  // ⑤ 균형 (10점)
-  // 가만히: ~8점 / 동작 중 좋은 균형: ~9점 / 완벽: 10점
+  // ── 균형
   let balScore=10;
-  if(sTilt>0.04)balScore-=sTilt*14;
-  if(hTilt>0.04)balScore-=hTilt*10;
+  if(sTilt>0.04)balScore-=sTilt*12;
+  if(hTilt>0.04)balScore-=hTilt*9;
   balScore=Math.max(5,Math.min(10,balScore));
 
-  // ⑥ 리듬 (10점)
-  // 움직임 없으면 0 / 일정한 동작: ~7점 / 좋은 리듬: ~9점
+  // ── 리듬 (기술 개수 + 움직임 일관성)
   let rhythmScore=0;
-  if(motionHist.length>6){
+  if(motionHist.length>8){
     const am=motionHist.reduce((a,b)=>a+b,0)/motionHist.length;
-    if(am>0.004){
+    if(am>0.003){
       const cv=Math.sqrt(motionHist.reduce((a,b)=>a+Math.pow(b-am,2),0)/motionHist.length)/am;
-      // 움직임이 있고 일정할수록 높은 점수
-      const consistencyScore=Math.max(0,10-cv*3);
-      const activityScore=Math.min(am*200,5); // 활발하게 움직일수록
-      rhythmScore=Math.min(consistencyScore*0.6+activityScore*0.4,10);
+      const actS=Math.min(am*180,5);
+      const conS=Math.max(0,5-cv*2.5);
+      rhythmScore=Math.min(actS*0.5+conS*0.5+Math.min(techHistory.length*0.25,2),10);
     }
   }
 
-  // ── 비대칭 스무딩
-  // 올라갈 때: 빠르게 (smUp) / 내려갈 때: 느리게 (smDown)
-  const smUp=0.15, smDown=0.05;
-  function sm(prev,next){return next>prev?prev*(1-smUp)+next*smUp:prev*(1-smDown)+next*smDown;}
+  // ── 비대칭 스무딩 (올라갈때 빠르게, 내려갈때 아주 느리게)
+  const smUp=0.22,smDown=0.025;
+  function sm(p,n){return n>p?p*(1-smUp)+n*smUp:p*(1-smDown)+n*smDown;}
   lastScore.stance=sm(lastScore.stance,stanceScore);
   lastScore.arm=sm(lastScore.arm,armScore);
   lastScore.posture=sm(lastScore.posture,postureScore);
@@ -655,16 +648,78 @@ function scoreLM(lm){
   lastScore.balance=sm(lastScore.balance,balScore);
   lastScore.rhythm=sm(lastScore.rhythm,rhythmScore);
 
-  // 피크 점수 갱신
+  // 피크 갱신
   Object.keys(peakScore).forEach(k=>peakScore[k]=Math.max(peakScore[k],lastScore[k]));
+}
 
-  sA.stance.push(lastScore.stance);sA.arm.push(lastScore.arm);
-  sA.posture.push(lastScore.posture);sA.power.push(lastScore.power);
-  sA.balance.push(lastScore.balance);sA.rhythm.push(lastScore.rhythm);
-  Object.keys(sA).forEach(k=>{if(sA[k].length>120)sA[k].shift();});
+// ── 기술 중 자세 품질 평가 (최고 순간 포착용)
+function evalQ(lK,rK,lE,rE){
+  const fK=Math.min(lK,rK),bK=Math.max(lK,rK);
+  const extE=Math.max(lE,rE),retE=Math.min(lE,rE);
+  // 앞굽이 판정
+  const stQ=(fK>=120&&fK<=165)?1-(Math.abs(fK-140)/22):0;
+  // 팔 뻗기 판정
+  const armQ=extE>=150?(extE-150)/30:0;
+  // 당기기 판정
+  const retQ=retE<=120?(120-retE)/60:0;
+  return stQ*0.4+armQ*0.4+retQ*0.2;
+}
 
-  const total=lastScore.stance+lastScore.arm+lastScore.posture+lastScore.power+lastScore.balance+lastScore.rhythm;
-  dbg('채점중|서기:'+stanceScore.toFixed(0)+' 손:'+armScore.toFixed(0)+' 절도:'+powerScore.toFixed(0)+' 합:'+total.toFixed(0));
+// ── 완료된 기술 채점 (WT 공식 기준 반영)
+function scoreTech(angles,peakVel,lm,hipY,shY,sw){
+  const {lK,rK,lE,rE}=angles;
+  const la=lm?lm[27]:null,ra=lm?lm[28]:null;
+
+  // ① 서기 (20점) — WT: 앞굽이 125~155도, 뒷발 155~178도
+  const fK=Math.min(lK,rK),bK=Math.max(lK,rK);
+  let stance=0;
+  // 앞굽이 핵심 각도
+  if(fK>=125&&fK<=155){
+    stance=14+Math.round((1-Math.abs(fK-140)/15)*4); // 140도 완벽=18점
+  } else if(fK>=110&&fK<125){stance=10;}
+  else if(fK>155&&fK<=170){stance=10;}
+  else if(fK>170&&fK<=180){stance=6;} // 차렷/준비
+  else{stance=4;}
+  // 뒷발 신전 보너스
+  if(bK>=155&&bK<=178)stance=Math.min(stance+4,20); // WT 뒷굽이 기준도 포함
+  else if(bK>=145)stance=Math.min(stance+2,20);
+  // 발 간격 보너스
+  if(la&&ra){
+    const gap=Math.abs(la.x-ra.x)/sw;
+    if(gap>=0.9&&gap<=2.3)stance=Math.min(stance+2,20);
+    else if(gap>=0.6)stance=Math.min(stance+1,20);
+  }
+  stance=Math.min(Math.round(stance),20);
+
+  // ② 손기술 (20점) — WT: 뻗기 165~180, 막기 팔꿈치 90~120, 당기기 45~90
+  const extE=Math.max(lE,rE),retE=Math.min(lE,rE);
+  let arm=0;
+  // 뻗는 팔 (완전 신전)
+  if(extE>=170)arm=11;
+  else if(extE>=160)arm=9;
+  else if(extE>=150)arm=7;
+  else if(extE>=135)arm=5;
+  else if(extE>=115)arm=3;
+  else arm=1;
+  // 당기는 팔 (허리 당김 or 막기 자세)
+  if(retE<=60)arm+=7;
+  else if(retE<=80)arm+=6;
+  else if(retE<=100)arm+=5;
+  else if(retE<=120)arm+=3; // WT 막기 90-120도
+  else if(retE<=140)arm+=1;
+  arm=Math.min(Math.round(arm),20);
+
+  // ③ 절도 (20점) — 각속도 기반, WT: 속도+파워 2점(비율로 환산)
+  // peakVel 4=느림, 10=보통, 20=빠름, 35+=매우빠름
+  let power=0;
+  if(peakVel>=4){
+    power=Math.min(Math.round((peakVel-4)/31*20),20);
+  }
+  // 좋은 기술 + 빠름 = 추가 보너스
+  if(arm>=14&&peakVel>=12)power=Math.min(power+3,20);
+  else if(arm>=10&&peakVel>=8)power=Math.min(power+1,20);
+
+  return{stance,arm,power};
 }
 
 function updateLiveUI(){
@@ -703,7 +758,7 @@ function stopMeasure(){
   const total=Math.min(Math.round(Object.values(avgSc).reduce((s,v)=>s+v,0)+kiaiB),100);
 
   aiScoreData={...avgSc,kiai:kiaiB,total};
-  adjustments={stance:0,arm:0,posture:0,power:0,balance:0,rhythm:0};
+  adjustments={stance:0,arm:0,posture:0,power:0,balance:0,rhythm:0}; aiScoreData.total=total;
   deductCounts=[0,0,0,0];
   judgeScores={j0:0,j1:0,j2:0,j3:0};
 
